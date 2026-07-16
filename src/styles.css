@@ -71,3 +71,12 @@ dialog {
 .cm-panel.cm-search label {
   font-size: 12px;
 }
+.sb-spacer {
+  flex: 1;
+}
+#statusbar select {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  color: #444;
+}

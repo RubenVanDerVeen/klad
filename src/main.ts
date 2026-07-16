@@ -7,6 +7,7 @@ import { createEditor, getText, setText, setWrap } from "./editor";
 import { getStartupFile, readFile, saveFile } from "./fileio";
 import { setupMenu } from "./menu";
 import { clampZoom, loadSettings, saveSettings, Settings } from "./settings";
+import { initStatusBar, setCursor, setEncoding, setEol, setZoomDisplay } from "./statusbar";
 
 const FILTERS = [
   { name: "Text files", extensions: ["txt", "md", "markdown", "log", "ini", "cfg"] },
@@ -25,9 +26,26 @@ function applyEditorStyle(): void {
 }
 applyEditorStyle();
 
+initStatusBar({
+  onEncodingChange: (encLabel) => {
+    meta.encoding = encLabel;
+    meta.dirty = true;
+    void refreshTitle();
+  },
+  onEolChange: (eol) => {
+    meta.eol = eol;
+    meta.dirty = true;
+    void refreshTitle();
+  },
+});
+setZoomDisplay(settings.zoom);
+setEncoding(meta.encoding);
+setEol(meta.eol);
+
 function setZoom(z: number): void {
   settings.zoom = clampZoom(z);
   applyEditorStyle();
+  setZoomDisplay(settings.zoom);
   saveSettings(settings);
 }
 
@@ -43,7 +61,7 @@ const view = createEditor(
       void refreshTitle();
     }
   },
-  () => {}, // SP-1 wires the status bar here
+  (line, col) => setCursor(line, col),
   settings.wrap,
 );
 
@@ -64,6 +82,8 @@ async function refreshTitle(): Promise<void> {
 function loadIntoEditor(text: string, newMeta: DocMeta): void {
   setText(view, text);
   meta = newMeta;
+  setEncoding(meta.encoding);
+  setEol(meta.eol);
   void refreshTitle();
   view.focus();
 }
