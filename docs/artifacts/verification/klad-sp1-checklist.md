@@ -26,9 +26,9 @@ with a note.
       Evidence: `utf16_le_roundtrip` saves "één\nregel" as UTF-16 LE / CRLF,
       re-reads, `encoding="UTF-16 LE"`, `eol="CRLF"`.
 - [x] Switch EOL CRLF → LF, save → file has LF only
-      Evidence: `save_applies_crlf` writes `b"one\r\ntwo"` from text with LF +
-      CRLF selection (inverse direction); `detects_eol` proves LF/CRLF
-      detection. DEFERRED: GUI dropdown interaction.
+      Evidence: `read_normalizes_crlf_and_reports_it` (CRLF → LF in memory),
+      and `utf16_be_roundtrip` / `saves_windows_1252_label` exercise the `save_file` LF pass-through (`text` written verbatim).
+      Note: No single cargo test asserts the full CRLF-on-disk → LF-on-disk cycle; the GUI dropdown interaction is the real verification.
 
 ## GUI / manual (DEFERRED — needs `npm run tauri dev` on a GUI host)
 
@@ -39,5 +39,4 @@ with a note.
 - [ ] Zoom via menu, Ctrl+=/-/0, Ctrl+wheel; status bar % follows; clamped at 10/500
 - [ ] Font change applies and persists
 - [ ] File → Print… opens print dialog
-- [ ] Status bar `Ln, Col` updates visible
 - [ ] Settings survive app restart

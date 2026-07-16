@@ -6,7 +6,7 @@ import { DocMeta, fileName, newDoc, windowTitle } from "./document";
 import { createEditor, getText, setText, setWrap } from "./editor";
 import { getStartupFile, readFile, saveFile } from "./fileio";
 import { setupMenu } from "./menu";
-import { clampZoom, loadSettings, saveSettings, Settings } from "./settings";
+import { clampFontSize, clampZoom, loadSettings, saveSettings, Settings } from "./settings";
 import { initStatusBar, setCursor, setEncoding, setEol, setZoomDisplay } from "./statusbar";
 
 const FILTERS = [
@@ -58,7 +58,7 @@ function openFontDialog(): void {
   dlg.showModal();
   document.getElementById("btnFontOk")!.onclick = () => {
     settings.fontFamily = family.value;
-    settings.fontSize = Math.min(72, Math.max(8, Number(size.value) || 14));
+    settings.fontSize = clampFontSize(Number(size.value) || 14);
     applyEditorStyle();
     saveSettings(settings);
     dlg.close();
@@ -167,7 +167,7 @@ async function doSaveAs(): Promise<void> {
   }
 }
 
-const menuHandles = await setupMenu(
+await setupMenu(
   {
     newFile: () => void doNew(),
     openFile: () => void doOpen(),
@@ -190,8 +190,6 @@ const menuHandles = await setupMenu(
   },
   settings.wrap,
 );
-void menuHandles;
-
 void appWindow.onCloseRequested(async (event) => {
   if (!meta.dirty) return; // allow close
   event.preventDefault();

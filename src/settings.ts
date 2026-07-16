@@ -18,6 +18,10 @@ export function clampZoom(z: number): number {
   return Math.min(500, Math.max(10, z));
 }
 
+export function clampFontSize(n: number): number {
+  return Math.min(72, Math.max(8, n));
+}
+
 export function parseSettings(raw: string | null): Settings {
   if (!raw) return { ...DEFAULT_SETTINGS };
   let data: unknown;
@@ -31,7 +35,7 @@ export function parseSettings(raw: string | null): Settings {
   if (typeof obj.wrap === "boolean") out.wrap = obj.wrap;
   if (typeof obj.zoom === "number") out.zoom = clampZoom(obj.zoom);
   if (typeof obj.fontFamily === "string") out.fontFamily = obj.fontFamily;
-  if (typeof obj.fontSize === "number") out.fontSize = obj.fontSize;
+  if (typeof obj.fontSize === "number") out.fontSize = clampFontSize(obj.fontSize);
   return out;
 }
 
