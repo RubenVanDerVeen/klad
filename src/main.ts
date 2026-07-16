@@ -1,10 +1,12 @@
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { gotoLine, openSearchPanel } from "@codemirror/search";
 import { askSave, showError } from "./dialogs";
 import { DocMeta, fileName, newDoc, windowTitle } from "./document";
-import { createEditor, getText, setText } from "./editor";
+import { createEditor, getText, setText, setWrap } from "./editor";
 import { getStartupFile, readFile, saveFile } from "./fileio";
 import { setupMenu } from "./menu";
+import { clampZoom, loadSettings, saveSettings, Settings } from "./settings";
 
 const FILTERS = [
   { name: "Text files", extensions: ["txt", "md", "markdown", "log", "ini", "cfg"] },
@@ -13,6 +15,25 @@ const FILTERS = [
 
 let meta: DocMeta = newDoc();
 const appWindow = getCurrentWindow();
+
+const settings: Settings = loadSettings();
+
+function applyEditorStyle(): void {
+  const root = document.documentElement.style;
+  root.setProperty("--editor-font-family", settings.fontFamily);
+  root.setProperty("--editor-font-size", `${(settings.fontSize * settings.zoom) / 100}px`);
+}
+applyEditorStyle();
+
+function setZoom(z: number): void {
+  settings.zoom = clampZoom(z);
+  applyEditorStyle();
+  saveSettings(settings);
+}
+
+function openFontDialog(): void {
+  // Implemented in Task 5
+}
 
 const view = createEditor(
   document.getElementById("editor")!,
@@ -23,6 +44,17 @@ const view = createEditor(
     }
   },
   () => {}, // SP-1 wires the status bar here
+  settings.wrap,
+);
+
+view.scrollDOM.addEventListener(
+  "wheel",
+  (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    setZoom(settings.zoom + (e.deltaY < 0 ? 10 : -10));
+  },
+  { passive: false },
 );
 
 async function refreshTitle(): Promise<void> {
@@ -101,13 +133,30 @@ async function doSaveAs(): Promise<void> {
   }
 }
 
-void setupMenu({
-  newFile: () => void doNew(),
-  openFile: () => void doOpen(),
-  saveFile: () => void doSave(),
-  saveFileAs: () => void doSaveAs(),
-  exit: () => void appWindow.close(),
-});
+const menuHandles = await setupMenu(
+  {
+    newFile: () => void doNew(),
+    openFile: () => void doOpen(),
+    saveFile: () => void doSave(),
+    saveFileAs: () => void doSaveAs(),
+    print: () => window.print(),
+    exit: () => void appWindow.close(),
+    find: () => openSearchPanel(view),
+    replace: () => openSearchPanel(view),
+    goToLine: () => gotoLine(view),
+    setWrap: (on) => {
+      settings.wrap = on;
+      setWrap(view, on);
+      saveSettings(settings);
+    },
+    zoomIn: () => setZoom(settings.zoom + 10),
+    zoomOut: () => setZoom(settings.zoom - 10),
+    zoomReset: () => setZoom(100),
+    chooseFont: () => openFontDialog(),
+  },
+  settings.wrap,
+);
+void menuHandles;
 
 void appWindow.onCloseRequested(async (event) => {
   if (!meta.dirty) return; // allow close
