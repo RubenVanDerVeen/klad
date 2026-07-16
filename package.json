@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "tauri": "tauri",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "make-icon": "node scripts/make-icon.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.8.0",
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.5.0",
+    "sharp": "^0.34.5",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
     "vitest": "^3.0.0"
