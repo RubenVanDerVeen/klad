@@ -50,7 +50,21 @@ function setZoom(z: number): void {
 }
 
 function openFontDialog(): void {
-  // Implemented in Task 5
+  const dlg = document.getElementById("fontDialog") as HTMLDialogElement;
+  const family = document.getElementById("fontFamilySel") as HTMLSelectElement;
+  const size = document.getElementById("fontSizeInput") as HTMLInputElement;
+  family.value = settings.fontFamily;
+  size.value = String(settings.fontSize);
+  dlg.showModal();
+  document.getElementById("btnFontOk")!.onclick = () => {
+    settings.fontFamily = family.value;
+    settings.fontSize = Math.min(72, Math.max(8, Number(size.value) || 14));
+    applyEditorStyle();
+    saveSettings(settings);
+    dlg.close();
+    view.focus();
+  };
+  document.getElementById("btnFontCancel")!.onclick = () => dlg.close();
 }
 
 const view = createEditor(

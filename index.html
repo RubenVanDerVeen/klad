@@ -26,6 +26,30 @@
       <div class="dlg-buttons"><button id="btnErrOk">OK</button></div>
     </dialog>
 
+    <dialog id="fontDialog">
+      <h3>Font</h3>
+      <p>
+        <label>Family
+          <select id="fontFamilySel">
+            <option>Consolas</option>
+            <option>Cascadia Code</option>
+            <option>Courier New</option>
+            <option>Segoe UI</option>
+            <option>monospace</option>
+          </select>
+        </label>
+      </p>
+      <p>
+        <label>Size
+          <input id="fontSizeInput" type="number" min="8" max="72" step="1" />
+        </label>
+      </p>
+      <div class="dlg-buttons">
+        <button id="btnFontOk">OK</button>
+        <button id="btnFontCancel">Cancel</button>
+      </div>
+    </dialog>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
