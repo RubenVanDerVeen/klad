@@ -1,1 +1,8 @@
-document.getElementById("editor")!.textContent = "klad scaffold ok";
+import { createEditor } from "./editor";
+
+const view = createEditor(
+  document.getElementById("editor")!,
+  () => {},
+  () => {},
+);
+view.focus();
