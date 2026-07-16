@@ -1,0 +1,63 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  overflow: hidden;
+}
+body {
+  display: flex;
+  flex-direction: column;
+}
+#content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+#editor {
+  flex: 1;
+  min-width: 0;
+}
+#editor .cm-editor {
+  height: 100%;
+}
+#editor .cm-editor.cm-focused {
+  outline: none;
+}
+#editor .cm-scroller {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: var(--editor-font-size, 14px);
+}
+#preview {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  border-left: 1px solid #d0d0d0;
+  padding: 0 16px;
+}
+#statusbar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 3px 12px;
+  border-top: 1px solid #d0d0d0;
+  font-size: 12px;
+  color: #444;
+  min-height: 18px;
+}
+dialog {
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  min-width: 320px;
+}
+.dlg-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.dlg-buttons button {
+  padding: 4px 14px;
+}

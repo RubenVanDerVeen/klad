@@ -1,0 +1,1 @@
+document.getElementById("editor")!.textContent = "klad scaffold ok";

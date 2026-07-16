@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Untitled - Klad</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main id="content">
+      <div id="editor"></div>
+      <div id="preview" hidden></div>
+    </main>
+    <div id="statusbar"></div>
+
+    <dialog id="savePrompt">
+      <p id="savePromptMsg"></p>
+      <div class="dlg-buttons">
+        <button id="btnSave">Save</button>
+        <button id="btnDiscard">Don't Save</button>
+        <button id="btnCancel">Cancel</button>
+      </div>
+    </dialog>
+
+    <dialog id="errorBox">
+      <p id="errorMsg"></p>
+      <div class="dlg-buttons"><button id="btnErrOk">OK</button></div>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
