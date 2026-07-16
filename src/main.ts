@@ -109,6 +109,14 @@ void setupMenu({
   exit: () => void appWindow.close(),
 });
 
+void appWindow.onCloseRequested(async (event) => {
+  if (!meta.dirty) return; // allow close
+  event.preventDefault();
+  if (await confirmDiscard()) {
+    await appWindow.destroy();
+  }
+});
+
 void getStartupFile().then((p) => {
   if (p) return openPath(p);
 });
