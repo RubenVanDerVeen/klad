@@ -1,4 +1,4 @@
-import { Menu, MenuItem, PredefinedMenuItem, Submenu } from "@tauri-apps/api/menu";
+import { Menu, MenuItem, CheckMenuItem, PredefinedMenuItem, Submenu } from "@tauri-apps/api/menu";
 
 export interface MenuActions {
   newFile(): void;
@@ -6,9 +6,14 @@ export interface MenuActions {
   saveFile(): void;
   saveFileAs(): void;
   exit(): void;
+  togglePreview(on: boolean): void;
 }
 
-export async function setupMenu(actions: MenuActions): Promise<void> {
+export interface MenuHandles {
+  previewItem: CheckMenuItem;
+}
+
+export async function setupMenu(actions: MenuActions): Promise<MenuHandles> {
   const fileMenu = await Submenu.new({
     text: "File",
     items: [
@@ -34,6 +39,20 @@ export async function setupMenu(actions: MenuActions): Promise<void> {
     ],
   });
 
-  const menu = await Menu.new({ items: [fileMenu, editMenu] });
+  const previewItem = await CheckMenuItem.new({
+    id: "mdPreview",
+    text: "Markdown Preview",
+    accelerator: "CmdOrCtrl+Shift+M",
+    checked: false,
+    action: async () => actions.togglePreview(await previewItem.isChecked()),
+  });
+
+  const viewMenu = await Submenu.new({
+    text: "View",
+    items: [previewItem],
+  });
+
+  const menu = await Menu.new({ items: [fileMenu, editMenu, viewMenu] });
   await menu.setAsAppMenu();
+  return { previewItem };
 }

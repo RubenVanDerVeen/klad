@@ -5,6 +5,13 @@ import { DocMeta, fileName, newDoc, windowTitle } from "./document";
 import { createEditor, getText, setText } from "./editor";
 import { getStartupFile, readFile, saveFile } from "./fileio";
 import { setupMenu } from "./menu";
+import {
+  isPreviewVisible,
+  renderPreviewNow,
+  setPreviewVisible,
+  syncPreviewScroll,
+  updatePreview,
+} from "./preview";
 
 const FILTERS = [
   { name: "Text files", extensions: ["txt", "md", "markdown", "log", "ini", "cfg"] },
@@ -21,6 +28,7 @@ const view = createEditor(
       meta.dirty = true;
       void refreshTitle();
     }
+    updatePreview(getText(view));
   },
   () => {}, // SP-1 wires the status bar here
 );
@@ -29,11 +37,23 @@ async function refreshTitle(): Promise<void> {
   await appWindow.setTitle(windowTitle(meta));
 }
 
+function isMarkdown(m: DocMeta): boolean {
+  return /\.(md|markdown)$/i.test(m.path ?? "");
+}
+
+function applyPreviewMode(): void {
+  const on = isMarkdown(meta);
+  setPreviewVisible(on);
+  if (on) renderPreviewNow(getText(view));
+  void menuHandles.previewItem.setChecked(on);
+}
+
 function loadIntoEditor(text: string, newMeta: DocMeta): void {
   setText(view, text);
   meta = newMeta;
   void refreshTitle();
   view.focus();
+  applyPreviewMode();
 }
 
 /** Returns true when it is safe to discard the current buffer. */
@@ -96,17 +116,26 @@ async function doSaveAs(): Promise<void> {
     meta.path = path;
     meta.dirty = false;
     void refreshTitle();
+    applyPreviewMode();
   } catch (e) {
     showError(`Could not save file:\n${e}`);
   }
 }
 
-void setupMenu({
+const menuHandles = await setupMenu({
   newFile: () => void doNew(),
   openFile: () => void doOpen(),
   saveFile: () => void doSave(),
   saveFileAs: () => void doSaveAs(),
   exit: () => void appWindow.close(),
+  togglePreview: (on) => {
+    setPreviewVisible(on);
+    if (on) renderPreviewNow(getText(view));
+  },
+});
+
+view.scrollDOM.addEventListener("scroll", () => {
+  if (isPreviewVisible()) syncPreviewScroll(view.scrollDOM);
 });
 
 void appWindow.onCloseRequested(async (event) => {
