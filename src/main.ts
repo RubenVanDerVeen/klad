@@ -5,9 +5,16 @@ import { askSave, showError } from "./dialogs";
 import { DocMeta, fileName, newDoc, windowTitle } from "./document";
 import { createEditor, getText, setText, setWrap } from "./editor";
 import { getStartupFile, readFile, saveFile } from "./fileio";
-import { setupMenu } from "./menu";
+import { MenuHandles, setupMenu } from "./menu";
 import { clampFontSize, clampZoom, loadSettings, saveSettings, Settings } from "./settings";
 import { initStatusBar, setCursor, setEncoding, setEol, setZoomDisplay } from "./statusbar";
+import {
+  isPreviewVisible,
+  renderPreviewNow,
+  setPreviewVisible,
+  syncPreviewScroll,
+  updatePreview,
+} from "./preview";
 
 const FILTERS = [
   { name: "Text files", extensions: ["txt", "md", "markdown", "log", "ini", "cfg"] },
@@ -74,6 +81,7 @@ const view = createEditor(
       meta.dirty = true;
       void refreshTitle();
     }
+    updatePreview(getText(view));
   },
   (line, col) => setCursor(line, col),
   settings.wrap,
@@ -93,6 +101,17 @@ async function refreshTitle(): Promise<void> {
   await appWindow.setTitle(windowTitle(meta));
 }
 
+function isMarkdown(m: DocMeta): boolean {
+  return /\.(md|markdown)$/i.test(m.path ?? "");
+}
+
+function applyPreviewMode(): void {
+  const on = isMarkdown(meta);
+  setPreviewVisible(on);
+  if (on) renderPreviewNow(getText(view));
+  void menuHandles?.previewItem.setChecked(on);
+}
+
 function loadIntoEditor(text: string, newMeta: DocMeta): void {
   setText(view, text);
   meta = newMeta;
@@ -100,6 +119,7 @@ function loadIntoEditor(text: string, newMeta: DocMeta): void {
   setEol(meta.eol);
   void refreshTitle();
   view.focus();
+  applyPreviewMode();
 }
 
 /** Returns true when it is safe to discard the current buffer. */
@@ -162,34 +182,49 @@ async function doSaveAs(): Promise<void> {
     meta.path = path;
     meta.dirty = false;
     void refreshTitle();
+    applyPreviewMode();
   } catch (e) {
     showError(`Could not save file:\n${e}`);
   }
 }
 
-await setupMenu(
-  {
-    newFile: () => void doNew(),
-    openFile: () => void doOpen(),
-    saveFile: () => void doSave(),
-    saveFileAs: () => void doSaveAs(),
-    print: () => window.print(),
-    exit: () => void appWindow.close(),
-    find: () => openSearchPanel(view),
-    replace: () => openSearchPanel(view),
-    goToLine: () => gotoLine(view),
-    setWrap: (on) => {
-      settings.wrap = on;
-      setWrap(view, on);
-      saveSettings(settings);
+let menuHandles: MenuHandles | undefined;
+try {
+  menuHandles = await setupMenu(
+    {
+      newFile: () => void doNew(),
+      openFile: () => void doOpen(),
+      saveFile: () => void doSave(),
+      saveFileAs: () => void doSaveAs(),
+      print: () => window.print(),
+      exit: () => void appWindow.close(),
+      find: () => openSearchPanel(view),
+      replace: () => openSearchPanel(view),
+      goToLine: () => gotoLine(view),
+      setWrap: (on) => {
+        settings.wrap = on;
+        setWrap(view, on);
+        saveSettings(settings);
+      },
+      zoomIn: () => setZoom(settings.zoom + 10),
+      zoomOut: () => setZoom(settings.zoom - 10),
+      zoomReset: () => setZoom(100),
+      chooseFont: () => openFontDialog(),
+      togglePreview: (on) => {
+        setPreviewVisible(on);
+        if (on) renderPreviewNow(getText(view));
+      },
     },
-    zoomIn: () => setZoom(settings.zoom + 10),
-    zoomOut: () => setZoom(settings.zoom - 10),
-    zoomReset: () => setZoom(100),
-    chooseFont: () => openFontDialog(),
-  },
-  settings.wrap,
-);
+    settings.wrap,
+  );
+} catch (e) {
+  console.error("menu setup failed:", e);
+}
+
+view.scrollDOM.addEventListener("scroll", () => {
+  if (isPreviewVisible()) syncPreviewScroll(view.scrollDOM);
+});
+
 void appWindow.onCloseRequested(async (event) => {
   if (!meta.dirty) return; // allow close
   event.preventDefault();

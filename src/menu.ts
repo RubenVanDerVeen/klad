@@ -21,10 +21,12 @@ export interface MenuActions {
   zoomOut(): void;
   zoomReset(): void;
   chooseFont(): void;
+  togglePreview(on: boolean): void;
 }
 
 export interface MenuHandles {
   wrapItem: CheckMenuItem;
+  previewItem: CheckMenuItem;
 }
 
 export async function setupMenu(
@@ -70,8 +72,15 @@ export async function setupMenu(
     action: async () => actions.setWrap(await wrapItem!.isChecked()),
   });
 
-  // NOTE for integration: SP-2 also adds an item to this View submenu
-  // (Markdown Preview). On merge, keep wrap/zoom first, preview after.
+  const previewItem = await CheckMenuItem.new({
+    id: "mdPreview",
+    text: "Markdown Preview",
+    accelerator: "CmdOrCtrl+Shift+M",
+    checked: false,
+    // ponytail: relies on Tauri flipping CheckMenuItem state before invoking the action
+    action: async () => actions.togglePreview(await previewItem.isChecked()),
+  });
+
   const viewMenu = await Submenu.new({
     text: "View",
     items: [
@@ -80,6 +89,8 @@ export async function setupMenu(
       await MenuItem.new({ id: "zoomIn", text: "Zoom In", accelerator: "CmdOrCtrl+=", action: actions.zoomIn }),
       await MenuItem.new({ id: "zoomOut", text: "Zoom Out", accelerator: "CmdOrCtrl+-", action: actions.zoomOut }),
       await MenuItem.new({ id: "zoomReset", text: "Restore Default Zoom", accelerator: "CmdOrCtrl+0", action: actions.zoomReset }),
+      await PredefinedMenuItem.new({ item: "Separator" }),
+      previewItem,
     ],
   });
 
@@ -92,5 +103,5 @@ export async function setupMenu(
 
   const menu = await Menu.new({ items: [fileMenu, editMenu, viewMenu, formatMenu] });
   await menu.setAsAppMenu();
-  return { wrapItem };
+  return { wrapItem, previewItem };
 }
