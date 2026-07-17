@@ -20,5 +20,31 @@
     ],
     "security": { "csp": null }
   },
-  "bundle": { "active": false }
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "deb", "appimage"],
+    "category": "Utility",
+    "shortDescription": "Simple cross-platform notepad",
+    "longDescription": "Klad is a simple Notepad replacement for Windows and Linux with live Markdown preview.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "fileAssociations": [
+      { "ext": ["txt"], "name": "Text Document", "description": "Text Document", "mimeType": "text/plain", "role": "Editor" },
+      { "ext": ["md", "markdown"], "name": "Markdown Document", "description": "Markdown Document", "mimeType": "text/markdown", "role": "Editor" },
+      { "ext": ["log"], "name": "Log File", "description": "Log File", "mimeType": "text/plain", "role": "Editor" },
+      { "ext": ["ini"], "name": "Configuration File", "description": "Configuration File", "mimeType": "text/plain", "role": "Editor" },
+      { "ext": ["cfg"], "name": "Configuration File", "description": "Configuration File", "mimeType": "text/plain", "role": "Editor" }
+    ],
+    "windows": {
+      "nsis": { "installMode": "currentUser" }
+    },
+    "linux": {
+      "deb": { "section": "editors" }
+    }
+  }
 }
