@@ -4,7 +4,7 @@ import { askSave, showError } from "./dialogs";
 import { DocMeta, fileName, newDoc, windowTitle } from "./document";
 import { createEditor, getText, setText } from "./editor";
 import { getStartupFile, readFile, saveFile } from "./fileio";
-import { setupMenu } from "./menu";
+import { MenuHandles, setupMenu } from "./menu";
 import {
   isPreviewVisible,
   renderPreviewNow,
@@ -45,7 +45,7 @@ function applyPreviewMode(): void {
   const on = isMarkdown(meta);
   setPreviewVisible(on);
   if (on) renderPreviewNow(getText(view));
-  void menuHandles.previewItem.setChecked(on);
+  void menuHandles?.previewItem.setChecked(on);
 }
 
 function loadIntoEditor(text: string, newMeta: DocMeta): void {
@@ -122,17 +122,22 @@ async function doSaveAs(): Promise<void> {
   }
 }
 
-const menuHandles = await setupMenu({
-  newFile: () => void doNew(),
-  openFile: () => void doOpen(),
-  saveFile: () => void doSave(),
-  saveFileAs: () => void doSaveAs(),
-  exit: () => void appWindow.close(),
-  togglePreview: (on) => {
-    setPreviewVisible(on);
-    if (on) renderPreviewNow(getText(view));
-  },
-});
+let menuHandles: MenuHandles | undefined;
+try {
+  menuHandles = await setupMenu({
+    newFile: () => void doNew(),
+    openFile: () => void doOpen(),
+    saveFile: () => void doSave(),
+    saveFileAs: () => void doSaveAs(),
+    exit: () => void appWindow.close(),
+    togglePreview: (on) => {
+      setPreviewVisible(on);
+      if (on) renderPreviewNow(getText(view));
+    },
+  });
+} catch (e) {
+  console.error("menu setup failed:", e);
+}
 
 view.scrollDOM.addEventListener("scroll", () => {
   if (isPreviewVisible()) syncPreviewScroll(view.scrollDOM);

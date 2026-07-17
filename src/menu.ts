@@ -44,6 +44,7 @@ export async function setupMenu(actions: MenuActions): Promise<MenuHandles> {
     text: "Markdown Preview",
     accelerator: "CmdOrCtrl+Shift+M",
     checked: false,
+    // ponytail: relies on Tauri flipping CheckMenuItem state before invoking the action
     action: async () => actions.togglePreview(await previewItem.isChecked()),
   });
 

@@ -38,5 +38,7 @@ export function syncPreviewScroll(scroller: HTMLElement): void {
   const max = scroller.scrollHeight - scroller.clientHeight;
   if (max <= 0) return;
   const ratio = scroller.scrollTop / max;
-  p.scrollTop = ratio * (p.scrollHeight - p.clientHeight);
+  const previewMax = p.scrollHeight - p.clientHeight;
+  if (previewMax <= 0) return;
+  p.scrollTop = ratio * previewMax;
 }
