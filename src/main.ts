@@ -1,10 +1,13 @@
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { gotoLine, openSearchPanel } from "@codemirror/search";
 import { askSave, showError } from "./dialogs";
 import { DocMeta, fileName, newDoc, windowTitle } from "./document";
-import { createEditor, getText, setText } from "./editor";
+import { createEditor, getText, setText, setWrap } from "./editor";
 import { getStartupFile, readFile, saveFile } from "./fileio";
 import { setupMenu } from "./menu";
+import { clampFontSize, clampZoom, loadSettings, saveSettings, Settings } from "./settings";
+import { initStatusBar, setCursor, setEncoding, setEol, setZoomDisplay } from "./statusbar";
 
 const FILTERS = [
   { name: "Text files", extensions: ["txt", "md", "markdown", "log", "ini", "cfg"] },
@@ -14,6 +17,56 @@ const FILTERS = [
 let meta: DocMeta = newDoc();
 const appWindow = getCurrentWindow();
 
+const settings: Settings = loadSettings();
+
+function applyEditorStyle(): void {
+  const root = document.documentElement.style;
+  root.setProperty("--editor-font-family", settings.fontFamily);
+  root.setProperty("--editor-font-size", `${(settings.fontSize * settings.zoom) / 100}px`);
+}
+applyEditorStyle();
+
+initStatusBar({
+  onEncodingChange: (encLabel) => {
+    meta.encoding = encLabel;
+    meta.dirty = true;
+    void refreshTitle();
+  },
+  onEolChange: (eol) => {
+    meta.eol = eol;
+    meta.dirty = true;
+    void refreshTitle();
+  },
+});
+setZoomDisplay(settings.zoom);
+setEncoding(meta.encoding);
+setEol(meta.eol);
+
+function setZoom(z: number): void {
+  settings.zoom = clampZoom(z);
+  applyEditorStyle();
+  setZoomDisplay(settings.zoom);
+  saveSettings(settings);
+}
+
+function openFontDialog(): void {
+  const dlg = document.getElementById("fontDialog") as HTMLDialogElement;
+  const family = document.getElementById("fontFamilySel") as HTMLSelectElement;
+  const size = document.getElementById("fontSizeInput") as HTMLInputElement;
+  family.value = settings.fontFamily;
+  size.value = String(settings.fontSize);
+  dlg.showModal();
+  document.getElementById("btnFontOk")!.onclick = () => {
+    settings.fontFamily = family.value;
+    settings.fontSize = clampFontSize(Number(size.value) || 14);
+    applyEditorStyle();
+    saveSettings(settings);
+    dlg.close();
+    view.focus();
+  };
+  document.getElementById("btnFontCancel")!.onclick = () => dlg.close();
+}
+
 const view = createEditor(
   document.getElementById("editor")!,
   () => {
@@ -22,7 +75,18 @@ const view = createEditor(
       void refreshTitle();
     }
   },
-  () => {}, // SP-1 wires the status bar here
+  (line, col) => setCursor(line, col),
+  settings.wrap,
+);
+
+view.scrollDOM.addEventListener(
+  "wheel",
+  (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    setZoom(settings.zoom + (e.deltaY < 0 ? 10 : -10));
+  },
+  { passive: false },
 );
 
 async function refreshTitle(): Promise<void> {
@@ -32,6 +96,8 @@ async function refreshTitle(): Promise<void> {
 function loadIntoEditor(text: string, newMeta: DocMeta): void {
   setText(view, text);
   meta = newMeta;
+  setEncoding(meta.encoding);
+  setEol(meta.eol);
   void refreshTitle();
   view.focus();
 }
@@ -101,14 +167,29 @@ async function doSaveAs(): Promise<void> {
   }
 }
 
-void setupMenu({
-  newFile: () => void doNew(),
-  openFile: () => void doOpen(),
-  saveFile: () => void doSave(),
-  saveFileAs: () => void doSaveAs(),
-  exit: () => void appWindow.close(),
-});
-
+await setupMenu(
+  {
+    newFile: () => void doNew(),
+    openFile: () => void doOpen(),
+    saveFile: () => void doSave(),
+    saveFileAs: () => void doSaveAs(),
+    print: () => window.print(),
+    exit: () => void appWindow.close(),
+    find: () => openSearchPanel(view),
+    replace: () => openSearchPanel(view),
+    goToLine: () => gotoLine(view),
+    setWrap: (on) => {
+      settings.wrap = on;
+      setWrap(view, on);
+      saveSettings(settings);
+    },
+    zoomIn: () => setZoom(settings.zoom + 10),
+    zoomOut: () => setZoom(settings.zoom - 10),
+    zoomReset: () => setZoom(100),
+    chooseFont: () => openFontDialog(),
+  },
+  settings.wrap,
+);
 void appWindow.onCloseRequested(async (event) => {
   if (!meta.dirty) return; // allow close
   event.preventDefault();
