@@ -5,7 +5,7 @@ import { EditorView } from "@codemirror/view";
 import { askSave, showError } from "./dialogs";
 import { DocMeta, fileName, newDoc, windowTitle } from "./document";
 import { createEditor, getText, setText, setWrap } from "./editor";
-import { getStartupFile, readFile, saveFile } from "./fileio";
+import { getStartupFile, listenOpenFile, readFile, saveFile } from "./fileio";
 import { MenuHandles, setupMenu } from "./menu";
 import { loadSession, saveSession, Session, toSession } from "./session";
 import { clampFontSize, clampZoom, loadSettings, saveSettings, Settings } from "./settings";
@@ -442,6 +442,12 @@ window.addEventListener("keydown", (e) => {
 });
 
 void (async () => {
+  // Register the single-instance listener BEFORE the first await: a forwarded
+  // file can arrive during the getStartupFile() IPC roundtrip or during
+  // restoreSessionOrNew(), and openPath's dedup (findTabByPath) makes either
+  // arrival safe. Fire-and-forget the registration Promise.
+  void listenOpenFile((p) => void openPath(p));
+
   const startupFile = await getStartupFile();
   if (startupFile) {
     // CLI file arg wins; skip session restore (see spec §8 multi-instance rule).
