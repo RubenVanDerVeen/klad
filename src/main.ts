@@ -73,6 +73,11 @@ function applyEditorStyle(): void {
 }
 applyEditorStyle();
 
+function applyTheme(): void {
+  document.documentElement.dataset.theme = settings.theme;
+}
+applyTheme();
+
 initStatusBar({
   onEncodingChange: (encLabel) => {
     meta.encoding = encLabel;
@@ -372,6 +377,11 @@ try {
         setPreviewVisible(on);
         if (on) renderPreviewNow(getText(activeTab().view));
       },
+      toggleTheme: (on) => {
+        settings.theme = on ? "dark" : "light";
+        saveSettings(settings);
+        applyTheme();
+      },
       closeTab: () => {
         const id = coll.activeId;
         if (id) void closeTabById(id);
@@ -386,6 +396,7 @@ try {
       },
     },
     settings.wrap,
+    settings.theme === "dark",
   );
 } catch (e) {
   console.error("menu setup failed:", e);

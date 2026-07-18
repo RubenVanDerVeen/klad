@@ -22,6 +22,7 @@ export interface MenuActions {
   zoomReset(): void;
   chooseFont(): void;
   togglePreview(on: boolean): void;
+  toggleTheme(on: boolean): void;
   closeTab(): void;
   nextTab(): void;
   prevTab(): void;
@@ -35,6 +36,7 @@ export interface MenuHandles {
 export async function setupMenu(
   actions: MenuActions,
   initialWrap: boolean,
+  initialThemeDark: boolean,
 ): Promise<MenuHandles> {
   const fileMenu = await Submenu.new({
     text: "File",
@@ -85,6 +87,16 @@ export async function setupMenu(
     action: async () => actions.togglePreview(await previewItem.isChecked()),
   });
 
+  let themeItem: CheckMenuItem | undefined;
+  themeItem = await CheckMenuItem.new({
+    id: "themeDark",
+    text: "Dark Theme",
+    accelerator: "CmdOrCtrl+Shift+L",
+    checked: initialThemeDark,
+    // ponytail: relies on Tauri flipping CheckMenuItem state before invoking the action
+    action: async () => actions.toggleTheme(await themeItem!.isChecked()),
+  });
+
   const viewMenu = await Submenu.new({
     text: "View",
     items: [
@@ -94,6 +106,7 @@ export async function setupMenu(
       await MenuItem.new({ id: "zoomOut", text: "Zoom Out", accelerator: "CmdOrCtrl+-", action: actions.zoomOut }),
       await MenuItem.new({ id: "zoomReset", text: "Restore Default Zoom", accelerator: "CmdOrCtrl+0", action: actions.zoomReset }),
       await PredefinedMenuItem.new({ item: "Separator" }),
+      themeItem,
       previewItem,
     ],
   });
