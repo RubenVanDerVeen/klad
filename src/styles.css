@@ -8,6 +8,7 @@
   --hover-bg: #eaeaea;
   --code-bg: #f0f0f0;
   --heading-border: #e0e0e0;
+  color-scheme: light;
 }
 
 [data-theme="dark"] {
@@ -20,6 +21,7 @@
   --hover-bg: #2c313a;
   --code-bg: #2c313a;
   --heading-border: #3e4451;
+  color-scheme: dark;
 }
 
 html,
@@ -32,6 +34,8 @@ body {
 body {
   display: flex;
   flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
 }
 #content {
   flex: 1;
@@ -75,6 +79,8 @@ dialog {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   font-size: 14px;
   min-width: 320px;
+  background: var(--bg);
+  color: var(--fg);
 }
 .dlg-buttons {
   display: flex;
@@ -89,6 +95,7 @@ dialog {
   border-bottom: 1px solid var(--border);
   background: var(--panel-bg);
   font-size: 13px;
+  color: var(--fg);
 }
 .cm-panel.cm-search input,
 .cm-panel.cm-search button,
@@ -107,6 +114,7 @@ dialog {
 #preview {
   line-height: 1.6;
   font-size: 15px;
+  color: var(--fg);
 }
 #preview h1,
 #preview h2 {
