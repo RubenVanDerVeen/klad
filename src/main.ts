@@ -21,7 +21,9 @@ import {
   findTabByPath,
   genId,
   newCollection,
+  nextTab,
   openTab,
+  prevTab,
   switchTab,
   TabCollection,
   TabState,
@@ -360,6 +362,18 @@ try {
         setPreviewVisible(on);
         if (on) renderPreviewNow(getText(activeTab().view));
       },
+      closeTab: () => {
+        const id = coll.activeId;
+        if (id) void closeTabById(id);
+      },
+      nextTab: () => {
+        const next = nextTab(coll);
+        if (next.activeId && next.activeId !== coll.activeId) switchToTab(next.activeId);
+      },
+      prevTab: () => {
+        const prev = prevTab(coll);
+        if (prev.activeId && prev.activeId !== coll.activeId) switchToTab(prev.activeId);
+      },
     },
     settings.wrap,
   );
@@ -387,6 +401,20 @@ initTabBar({
   onSwitch: (id) => switchToTab(id),
   onClose: (id) => void closeTabById(id),
   onNew: () => void doNew(),
+});
+
+window.addEventListener("keydown", (e) => {
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (!ctrl) return;
+  if (e.key === "w" || e.key === "W") {
+    e.preventDefault();
+    const id = coll.activeId;
+    if (id) void closeTabById(id);
+  } else if (e.key === "Tab") {
+    e.preventDefault();
+    const target = e.shiftKey ? prevTab(coll) : nextTab(coll);
+    if (target.activeId && target.activeId !== coll.activeId) switchToTab(target.activeId);
+  }
 });
 
 // Bootstrap: one fresh untitled tab. Task 7 replaces this with startup-File-then-session logic.

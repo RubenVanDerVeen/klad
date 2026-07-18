@@ -22,6 +22,9 @@ export interface MenuActions {
   zoomReset(): void;
   chooseFont(): void;
   togglePreview(on: boolean): void;
+  closeTab(): void;
+  nextTab(): void;
+  prevTab(): void;
 }
 
 export interface MenuHandles {
@@ -43,6 +46,7 @@ export async function setupMenu(
       await PredefinedMenuItem.new({ item: "Separator" }),
       await MenuItem.new({ id: "print", text: "Print…", accelerator: "CmdOrCtrl+P", action: actions.print }),
       await PredefinedMenuItem.new({ item: "Separator" }),
+      await MenuItem.new({ id: "closeTab", text: "Close Tab", accelerator: "CmdOrCtrl+W", action: actions.closeTab }),
       await MenuItem.new({ id: "exit", text: "Exit", action: actions.exit }),
     ],
   });
@@ -101,7 +105,15 @@ export async function setupMenu(
     ],
   });
 
-  const menu = await Menu.new({ items: [fileMenu, editMenu, viewMenu, formatMenu] });
+  const tabsMenu = await Submenu.new({
+    text: "Tabs",
+    items: [
+      await MenuItem.new({ id: "nextTab", text: "Next Tab", accelerator: "CmdOrCtrl+Tab", action: actions.nextTab }),
+      await MenuItem.new({ id: "prevTab", text: "Previous Tab", accelerator: "CmdOrCtrl+Shift+Tab", action: actions.prevTab }),
+    ],
+  });
+
+  const menu = await Menu.new({ items: [fileMenu, editMenu, viewMenu, tabsMenu, formatMenu] });
   await menu.setAsAppMenu();
   return { wrapItem, previewItem };
 }
