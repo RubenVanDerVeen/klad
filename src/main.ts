@@ -7,6 +7,7 @@ import { DocMeta, fileName, newDoc, windowTitle } from "./document";
 import { createEditor, getText, setText, setWrap } from "./editor";
 import { getStartupFile, readFile, saveFile } from "./fileio";
 import { MenuHandles, setupMenu } from "./menu";
+import { loadSession, saveSession, Session, toSession } from "./session";
 import { clampFontSize, clampZoom, loadSettings, saveSettings, Settings } from "./settings";
 import { initStatusBar, setCursor, setEncoding, setEol, setZoomDisplay } from "./statusbar";
 import {
@@ -214,9 +215,26 @@ function appendAndActivate(tab: RuntimeTab): void {
   scheduleSessionSave();
 }
 
-// ponytail: stubbed here, real debounce added in Task 7. For now, no-op.
+let sessionSaveTimer: ReturnType<typeof setTimeout> | undefined;
 function scheduleSessionSave(): void {
-  /* filled in Task 7 */
+  if (sessionSaveTimer) clearTimeout(sessionSaveTimer);
+  sessionSaveTimer = setTimeout(persistSessionNow, 250);
+}
+
+function persistSessionNow(): void {
+  if (sessionSaveTimer) {
+    clearTimeout(sessionSaveTimer);
+    sessionSaveTimer = undefined;
+  }
+  // Sync unsavedText on dirty untitled tabs so the snapshot captures their latest content.
+  for (const t of runtime) {
+    if (t.meta.path === null && t.meta.dirty) {
+      t.unsavedText = getText(t.view);
+    } else {
+      t.unsavedText = undefined;
+    }
+  }
+  saveSession(toSession(coll));
 }
 
 async function closeTabById(id: string): Promise<void> {
@@ -390,11 +408,22 @@ document.getElementById("editor")!.addEventListener(
 );
 
 void appWindow.onCloseRequested(async (event) => {
-  if (!meta.dirty) return; // allow close
   event.preventDefault();
-  if (await confirmDiscard()) {
-    await appWindow.destroy();
+  for (const t of runtime) {
+    if (!t.meta.dirty) continue;
+    // Show the tab so the user sees what they're being asked about.
+    if (coll.activeId !== t.id) switchToTab(t.id);
+    const choice = await askSave(fileName(t.meta));
+    if (choice === "cancel") return; // abort shutdown
+    if (choice === "save") {
+      // doSave targets activeTab(), which we just switched to.
+      await doSave();
+      if (t.meta.dirty) return; // save was cancelled in Save As
+    }
+    // "discard" falls through to the next tab
   }
+  persistSessionNow();
+  await appWindow.destroy();
 });
 
 initTabBar({
@@ -417,9 +446,40 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
-// Bootstrap: one fresh untitled tab. Task 7 replaces this with startup-File-then-session logic.
-appendAndActivate(createTab("", newDoc()));
+void (async () => {
+  const startupFile = await getStartupFile();
+  if (startupFile) {
+    // CLI file arg wins; skip session restore (see spec §8 multi-instance rule).
+    await openPath(startupFile);
+  } else {
+    await restoreSessionOrNew();
+  }
+})();
 
-void getStartupFile().then((p) => {
-  if (p) void openPath(p);
-});
+async function restoreSessionOrNew(): Promise<void> {
+  const session = loadSession();
+  if (!session) {
+    appendAndActivate(createTab("", newDoc()));
+    return;
+  }
+  for (const entry of session.entries) {
+    if (entry.path) {
+      // Re-read named files from disk (picks up external edits). Dedup applies.
+      await openPath(entry.path);
+    } else {
+      // Untitled dirty buffer: restore text from the session blob.
+      const meta: DocMeta = {
+        path: null,
+        encoding: entry.encoding,
+        eol: entry.eol,
+        dirty: true, // still unsaved
+      };
+      appendAndActivate(createTab(entry.text ?? "", meta));
+    }
+  }
+  // Activate the tab the user had active (clamped index).
+  const targetId = coll.tabs[session.activeIndex]?.id;
+  if (targetId && targetId !== coll.activeId) {
+    switchToTab(targetId);
+  }
+}
