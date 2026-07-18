@@ -1,6 +1,7 @@
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { gotoLine, openSearchPanel } from "@codemirror/search";
+import { EditorView } from "@codemirror/view";
 import { askSave, showError } from "./dialogs";
 import { DocMeta, fileName, newDoc, windowTitle } from "./document";
 import { createEditor, getText, setText, setWrap } from "./editor";
@@ -15,16 +16,52 @@ import {
   syncPreviewScroll,
   updatePreview,
 } from "./preview";
+import {
+  closeTab,
+  findTabByPath,
+  genId,
+  newCollection,
+  openTab,
+  switchTab,
+  TabCollection,
+  TabState,
+} from "./tabs";
+import { initTabBar, renderTabs, TabView } from "./tabbar";
 
 const FILTERS = [
   { name: "Text files", extensions: ["txt", "md", "markdown", "log", "ini", "cfg"] },
   { name: "All files", extensions: ["*"] },
 ];
 
-let meta: DocMeta = newDoc();
 const appWindow = getCurrentWindow();
-
 const settings: Settings = loadSettings();
+
+interface RuntimeTab extends TabState {
+  view: EditorView;
+}
+
+let coll: TabCollection = newCollection();
+let runtime: RuntimeTab[] = [];
+let meta: DocMeta = newDoc(); // alias of activeTab().meta; rebound on switch
+
+function activeTab(): RuntimeTab {
+  const t = runtime.find((t) => t.id === coll.activeId);
+  if (!t) throw new Error("no active tab");
+  return t;
+}
+
+function toTabViews(): TabView[] {
+  return runtime.map((t) => ({
+    id: t.id,
+    label: fileName(t.meta),
+    dirty: t.meta.dirty,
+    active: t.id === coll.activeId,
+  }));
+}
+
+function paintTabBar(): void {
+  renderTabs(toTabViews());
+}
 
 function applyEditorStyle(): void {
   const root = document.documentElement.style;
@@ -69,25 +106,51 @@ function openFontDialog(): void {
     applyEditorStyle();
     saveSettings(settings);
     dlg.close();
-    view.focus();
+    activeTab().view.focus();
   };
   document.getElementById("btnFontCancel")!.onclick = () => dlg.close();
 }
 
-const view = createEditor(
-  document.getElementById("editor")!,
-  () => {
-    if (!meta.dirty) {
-      meta.dirty = true;
-      void refreshTitle();
-    }
-    updatePreview(getText(view));
-  },
-  (line, col) => setCursor(line, col),
-  settings.wrap,
-);
+function createTab(initialText: string, initialMeta: DocMeta): RuntimeTab {
+  const id = genId();
+  const owner: RuntimeTab = {
+    id,
+    meta: initialMeta,
+    view: undefined as unknown as EditorView, // assigned below
+  };
+  const view = createEditor(
+    document.getElementById("editor")!,
+    () => {
+      // onDocChanged: mutate the owning tab's meta, not the singleton.
+      if (!owner.meta.dirty) {
+        owner.meta.dirty = true;
+        if (owner.id === coll.activeId) {
+          void refreshTitle();
+          paintTabBar();
+        }
+      }
+      if (owner.id === coll.activeId) {
+        updatePreview(getText(owner.view));
+      }
+    },
+    (line, col) => {
+      if (owner.id === coll.activeId) setCursor(line, col);
+    },
+    settings.wrap,
+  );
+  owner.view = view;
+  setText(view, initialText);
+  // Non-active tabs are hidden until switched to. New tabs become active below.
+  view.dom.setAttribute("hidden", "");
+  return owner;
+}
 
-view.scrollDOM.addEventListener(
+function activeScrollDom(): HTMLElement {
+  return activeTab().view.scrollDOM;
+}
+
+// Wheel-zoom: attached to #editor (capture phase so it sees events from any tab's scroller)
+document.getElementById("editor")!.addEventListener(
   "wheel",
   (e) => {
     if (!e.ctrlKey) return;
@@ -108,18 +171,55 @@ function isMarkdown(m: DocMeta): boolean {
 function applyPreviewMode(): void {
   const on = isMarkdown(meta);
   setPreviewVisible(on);
-  if (on) renderPreviewNow(getText(view));
+  if (on) renderPreviewNow(getText(activeTab().view));
   void menuHandles?.previewItem.setChecked(on);
 }
 
-function loadIntoEditor(text: string, newMeta: DocMeta): void {
-  setText(view, text);
-  meta = newMeta;
+function showOnly(view: EditorView): void {
+  for (const t of runtime) {
+    if (t.view === view) t.view.dom.removeAttribute("hidden");
+    else t.view.dom.setAttribute("hidden", "");
+  }
+}
+
+function switchToTab(id: string): void {
+  if (coll.activeId === id) return;
+  const t = runtime.find((x) => x.id === id);
+  if (!t) return;
+  coll = switchTab(coll, id);
+  meta = t.meta;
+  showOnly(t.view);
   setEncoding(meta.encoding);
   setEol(meta.eol);
   void refreshTitle();
-  view.focus();
   applyPreviewMode();
+  t.view.focus();
+  paintTabBar();
+  scheduleSessionSave();
+}
+
+function appendAndActivate(tab: RuntimeTab): void {
+  runtime.push(tab);
+  coll = openTab(coll, tab);
+  meta = tab.meta;
+  showOnly(tab.view);
+  setEncoding(meta.encoding);
+  setEol(meta.eol);
+  void refreshTitle();
+  applyPreviewMode();
+  tab.view.focus();
+  paintTabBar();
+  scheduleSessionSave();
+}
+
+// ponytail: stubbed here, real debounce added in Task 7. For now, no-op.
+function scheduleSessionSave(): void {
+  /* filled in Task 7 */
+}
+
+// ponytail: stub, real impl in Task 5
+async function closeTabById(_id: string): Promise<void> {
+  /* filled in Task 5 */
 }
 
 /** Returns true when it is safe to discard the current buffer. */
@@ -133,56 +233,66 @@ async function confirmDiscard(): Promise<boolean> {
 }
 
 async function doNew(): Promise<void> {
-  if (!(await confirmDiscard())) return;
-  loadIntoEditor("", newDoc());
+  appendAndActivate(createTab("", newDoc()));
 }
 
 async function openPath(path: string): Promise<void> {
+  const existing = findTabByPath(coll, path);
+  if (existing) {
+    switchToTab(existing.id);
+    return;
+  }
   try {
     const doc = await readFile(path);
-    loadIntoEditor(doc.text, {
+    const tab = createTab(doc.text, {
       path,
       encoding: doc.encoding,
       eol: doc.eol as DocMeta["eol"],
       dirty: false,
     });
+    appendAndActivate(tab);
   } catch (e) {
     showError(`Could not open file:\n${e}`);
   }
 }
 
 async function doOpen(): Promise<void> {
-  if (!(await confirmDiscard())) return;
   const path = await openDialog({ multiple: false, filters: FILTERS });
   if (typeof path === "string") await openPath(path);
 }
 
 async function doSave(): Promise<void> {
-  if (!meta.path) {
+  const t = activeTab();
+  if (!t.meta.path) {
     await doSaveAs();
     return;
   }
   try {
-    await saveFile(meta.path, getText(view), meta.encoding, meta.eol);
-    meta.dirty = false;
+    await saveFile(t.meta.path, getText(t.view), t.meta.encoding, t.meta.eol);
+    t.meta.dirty = false;
     void refreshTitle();
+    paintTabBar();
+    scheduleSessionSave();
   } catch (e) {
     showError(`Could not save file:\n${e}`);
   }
 }
 
 async function doSaveAs(): Promise<void> {
+  const t = activeTab();
   const path = await saveDialog({
-    defaultPath: meta.path ?? `${fileName(meta)}.txt`,
+    defaultPath: t.meta.path ?? `${fileName(t.meta)}.txt`,
     filters: FILTERS,
   });
   if (!path) return;
   try {
-    await saveFile(path, getText(view), meta.encoding, meta.eol);
-    meta.path = path;
-    meta.dirty = false;
+    await saveFile(path, getText(t.view), t.meta.encoding, t.meta.eol);
+    t.meta.path = path;
+    t.meta.dirty = false;
     void refreshTitle();
     applyPreviewMode();
+    paintTabBar();
+    scheduleSessionSave();
   } catch (e) {
     showError(`Could not save file:\n${e}`);
   }
@@ -198,12 +308,12 @@ try {
       saveFileAs: () => void doSaveAs(),
       print: () => window.print(),
       exit: () => void appWindow.close(),
-      find: () => openSearchPanel(view),
-      replace: () => openSearchPanel(view),
-      goToLine: () => gotoLine(view),
+      find: () => openSearchPanel(activeTab().view),
+      replace: () => openSearchPanel(activeTab().view),
+      goToLine: () => gotoLine(activeTab().view),
       setWrap: (on) => {
         settings.wrap = on;
-        setWrap(view, on);
+        for (const t of runtime) setWrap(t.view, on);
         saveSettings(settings);
       },
       zoomIn: () => setZoom(settings.zoom + 10),
@@ -212,7 +322,7 @@ try {
       chooseFont: () => openFontDialog(),
       togglePreview: (on) => {
         setPreviewVisible(on);
-        if (on) renderPreviewNow(getText(view));
+        if (on) renderPreviewNow(getText(activeTab().view));
       },
     },
     settings.wrap,
@@ -221,9 +331,13 @@ try {
   console.error("menu setup failed:", e);
 }
 
-view.scrollDOM.addEventListener("scroll", () => {
-  if (isPreviewVisible()) syncPreviewScroll(view.scrollDOM);
-});
+document.getElementById("editor")!.addEventListener(
+  "scroll",
+  () => {
+    if (isPreviewVisible()) syncPreviewScroll(activeScrollDom());
+  },
+  true, // capture: scrollers are nested inside #editor
+);
 
 void appWindow.onCloseRequested(async (event) => {
   if (!meta.dirty) return; // allow close
@@ -233,8 +347,15 @@ void appWindow.onCloseRequested(async (event) => {
   }
 });
 
-void getStartupFile().then((p) => {
-  if (p) return openPath(p);
+initTabBar({
+  onSwitch: (id) => switchToTab(id),
+  onClose: (id) => void closeTabById(id),
+  onNew: () => void doNew(),
 });
 
-view.focus();
+// Bootstrap: one fresh untitled tab. Task 7 replaces this with startup-File-then-session logic.
+appendAndActivate(createTab("", newDoc()));
+
+void getStartupFile().then((p) => {
+  if (p) void openPath(p);
+});
