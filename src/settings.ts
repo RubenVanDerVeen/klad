@@ -3,6 +3,7 @@ export interface Settings {
   zoom: number;
   fontFamily: string;
   fontSize: number;
+  theme: "light" | "dark";
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -10,6 +11,7 @@ export const DEFAULT_SETTINGS: Settings = {
   zoom: 100,
   fontFamily: "Consolas",
   fontSize: 14,
+  theme: "light",
 };
 
 const KEY = "klad-settings";
@@ -36,6 +38,7 @@ export function parseSettings(raw: string | null): Settings {
   if (typeof obj.zoom === "number") out.zoom = clampZoom(obj.zoom);
   if (typeof obj.fontFamily === "string") out.fontFamily = obj.fontFamily;
   if (typeof obj.fontSize === "number") out.fontSize = clampFontSize(obj.fontSize);
+  if (obj.theme === "light" || obj.theme === "dark") out.theme = obj.theme;
   return out;
 }
 
