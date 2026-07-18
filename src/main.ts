@@ -217,9 +217,45 @@ function scheduleSessionSave(): void {
   /* filled in Task 7 */
 }
 
-// ponytail: stub, real impl in Task 5
-async function closeTabById(_id: string): Promise<void> {
-  /* filled in Task 5 */
+async function closeTabById(id: string): Promise<void> {
+  const t = runtime.find((x) => x.id === id);
+  if (!t) return;
+  // If dirty, show the tab and prompt.
+  if (t.meta.dirty && coll.activeId !== id) {
+    switchToTab(id);
+  }
+  if (t.meta.dirty) {
+    const choice = await askSave(fileName(t.meta));
+    if (choice === "cancel") return;
+    if (choice === "save") {
+      // Temporarily make this the active tab so doSave/activeTab() target it.
+      // doSave reads activeTab(), so we must activate before saving.
+      if (coll.activeId !== id) switchToTab(id);
+      await doSave();
+      if (t.meta.dirty) return; // save was cancelled in Save As
+    }
+    // "discard" falls through
+  }
+  // Tear down the view and remove from runtime + coll.
+  t.view.destroy();
+  runtime = runtime.filter((x) => x.id !== id);
+  coll = closeTab(coll, id);
+  if (coll.tabs.length === 0) {
+    // Never leave the editor empty.
+    appendAndActivate(createTab("", newDoc()));
+    return;
+  }
+  // Re-bind meta to whatever is now active.
+  const newActive = activeTab();
+  meta = newActive.meta;
+  showOnly(newActive.view);
+  setEncoding(meta.encoding);
+  setEol(meta.eol);
+  void refreshTitle();
+  applyPreviewMode();
+  newActive.view.focus();
+  paintTabBar();
+  scheduleSessionSave();
 }
 
 /** Returns true when it is safe to discard the current buffer. */
