@@ -78,11 +78,13 @@ initStatusBar({
     meta.encoding = encLabel;
     meta.dirty = true;
     void refreshTitle();
+    paintTabBar();
   },
   onEolChange: (eol) => {
     meta.eol = eol;
     meta.dirty = true;
     void refreshTitle();
+    paintTabBar();
   },
 });
 setZoomDisplay(settings.zoom);
@@ -278,16 +280,6 @@ async function closeTabById(id: string): Promise<void> {
   scheduleSessionSave();
 }
 
-/** Returns true when it is safe to discard the current buffer. */
-async function confirmDiscard(): Promise<boolean> {
-  if (!meta.dirty) return true;
-  const choice = await askSave(fileName(meta));
-  if (choice === "cancel") return false;
-  if (choice === "discard") return true;
-  await doSave();
-  return !meta.dirty; // save may have been cancelled in the Save As dialog
-}
-
 async function doNew(): Promise<void> {
   appendAndActivate(createTab("", newDoc()));
 }
@@ -432,6 +424,9 @@ initTabBar({
   onNew: () => void doNew(),
 });
 
+// Defense in depth: the Tauri menu accelerator already handles Ctrl+W / Ctrl+Tab on
+// most platforms, but this window-level keydown still fires (e.g. when the menu
+// accelerator is disabled or in dev builds), so we let it close/switch here too.
 window.addEventListener("keydown", (e) => {
   const ctrl = e.ctrlKey || e.metaKey;
   if (!ctrl) return;
@@ -482,4 +477,8 @@ async function restoreSessionOrNew(): Promise<void> {
   if (targetId && targetId !== coll.activeId) {
     switchToTab(targetId);
   }
+  // Cancel the debounce from N switchToTab/appendAndActivate calls and persist now,
+  // so the startup snapshot reflects what's actually on screen (not whatever the 250ms
+  // timer would have captured if it fired later).
+  persistSessionNow();
 }

@@ -37,12 +37,13 @@ export function parseSession(raw: string | null): Session | null {
     const text = typeof eo.text === "string" ? eo.text : undefined;
     // Drop clean untitled tabs (no path AND no text).
     if (eo.path === null && text === undefined) continue;
-    entries.push({
+    const entry: SessionEntry = {
       path: eo.path as string | null,
       encoding: eo.encoding,
       eol: eo.eol,
-      text,
-    });
+    };
+    if (text !== undefined) entry.text = text;
+    entries.push(entry);
   }
   if (entries.length === 0) return null;
 
@@ -67,17 +68,10 @@ export function loadSession(): Session | null {
 
 export function saveSession(s: Session): void {
   try {
+    if (typeof localStorage === "undefined") return;
     localStorage.setItem(KEY, JSON.stringify(s));
   } catch {
     // best-effort: storage unavailable or full
-  }
-}
-
-export function clearSession(): void {
-  try {
-    localStorage.removeItem(KEY);
-  } catch {
-    // ignore
   }
 }
 
