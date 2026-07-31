@@ -65,12 +65,27 @@ describe("session parsing", () => {
     expect(back).toEqual(s);
   });
 
-  it("toSession omits text for clean untitled tabs and for named tabs", () => {
+  it("toSession persists text for all dirty tabs (titled or untitled)", () => {
     let coll = newCollection();
-    coll = openTab(coll, tab(null, "t1", false)); // clean untitled
-    coll = openTab(coll, tab("/x.txt", "t2", true)); // dirty named (text would come from disk)
+    coll = openTab(coll, tab(null, "t1", false));                       // clean untitled
+    coll = openTab(coll, tab(null, "t2", true, "untitled-edits"));      // dirty untitled
+    coll = openTab(coll, tab("/x.txt", "t3", true, "named-edits"));     // dirty named
+    coll = openTab(coll, tab("/y.txt", "t4", false));                   // clean named
     const s = toSession(coll);
-    expect(s.entries[0].text).toBeUndefined();
-    expect(s.entries[1].text).toBeUndefined();
+    expect(s.entries[0].text).toBeUndefined(); // clean untitled
+    expect(s.entries[1].text).toBe("untitled-edits");
+    expect(s.entries[2].text).toBe("named-edits"); // NEW: dirty named now persists
+    expect(s.entries[3].text).toBeUndefined(); // clean named
+  });
+
+  it("round-trips a dirty named buffer with its unsaved text", () => {
+    let coll = newCollection();
+    coll = openTab(coll, tab("/notes.md", "t1", true, "unsaved markdown"));
+    coll = switchTab(coll, "t1");
+    const s = toSession(coll);
+    const back = parseSession(JSON.stringify(s));
+    expect(back).toEqual(s);
+    expect(back?.entries[0].path).toBe("/notes.md");
+    expect(back?.entries[0].text).toBe("unsaved markdown");
   });
 });

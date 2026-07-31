@@ -4,7 +4,7 @@ export interface SessionEntry {
   path: string | null;
   encoding: string;
   eol: "LF" | "CRLF";
-  /** Present only for untitled dirty buffers being persisted. */
+  /** Present for any dirty buffer (titled or untitled) being persisted. */
   text?: string;
 }
 
@@ -82,8 +82,9 @@ export function toSession(coll: TabCollection): Session {
       encoding: t.meta.encoding,
       eol: t.meta.eol,
     };
-    // Persist text only for untitled dirty buffers (caller sets unsavedText).
-    if (t.meta.path === null && t.meta.dirty) {
+    // Persist text for every dirty buffer (titled or untitled). The caller
+    // (persistSessionNow) sets unsavedText from the live editor before calling.
+    if (t.meta.dirty) {
       entry.text = t.unsavedText ?? "";
     }
     return entry;

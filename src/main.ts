@@ -233,9 +233,9 @@ function persistSessionNow(): void {
     clearTimeout(sessionSaveTimer);
     sessionSaveTimer = undefined;
   }
-  // Sync unsavedText on dirty untitled tabs so the snapshot captures their latest content.
+  // Sync unsavedText on ALL dirty tabs so the snapshot captures their latest content.
   for (const t of runtime) {
-    if (t.meta.path === null && t.meta.dirty) {
+    if (t.meta.dirty) {
       t.unsavedText = getText(t.view);
     } else {
       t.unsavedText = undefined;

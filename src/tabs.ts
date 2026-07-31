@@ -3,7 +3,7 @@ import { DocMeta } from "./document";
 export interface TabState {
   id: string;
   meta: DocMeta;
-  /** Present only when persisting a dirty untitled buffer to localStorage. */
+  /** Present when persisting a dirty buffer (titled or untitled) to localStorage. */
   unsavedText?: string;
 }
 
