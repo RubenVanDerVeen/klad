@@ -49,6 +49,9 @@ body {
 #editor .cm-editor {
   height: 100%;
 }
+#editor .cm-editor[hidden] {
+  display: none !important;
+}
 #editor .cm-editor.cm-focused {
   outline: none;
 }
