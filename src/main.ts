@@ -422,8 +422,11 @@ void appWindow.onCloseRequested(async (event) => {
       // doSave targets activeTab(), which we just switched to.
       await doSave();
       if (t.meta.dirty) return; // save was cancelled in Save As
+    } else if (choice === "discard") {
+      // True discard: clear dirty so persistSessionNow() below omits this buffer
+      // and the file re-reads from disk next launch (no ghost restore).
+      t.meta.dirty = false;
     }
-    // "discard" falls through to the next tab
   }
   persistSessionNow();
   await appWindow.destroy();
@@ -475,18 +478,36 @@ async function restoreSessionOrNew(): Promise<void> {
     return;
   }
   for (const entry of session.entries) {
-    if (entry.path) {
-      // Re-read named files from disk (picks up external edits). Dedup applies.
+    if (entry.path && entry.text !== undefined) {
+      // Dirty named buffer: restore the user's unsaved edits (do NOT re-read disk).
+      // Dedup like openPath: a forwarded single-instance file for the same path
+      // may arrive during restore; switch to the existing tab instead of duping.
+      // ponytail: stale-buffer ceiling -- if the file changed on disk since this
+      // snapshot, the stale buffer wins. Upgrade to an mtime comparison if that bites.
+      const existing = findTabByPath(coll, entry.path);
+      if (existing) {
+        switchToTab(existing.id);
+      } else {
+        const m: DocMeta = {
+          path: entry.path,
+          encoding: entry.encoding,
+          eol: entry.eol,
+          dirty: true,
+        };
+        appendAndActivate(createTab(entry.text, m));
+      }
+    } else if (entry.path) {
+      // Clean named file: re-read from disk (picks up external edits). Dedup applies.
       await openPath(entry.path);
     } else {
       // Untitled dirty buffer: restore text from the session blob.
-      const meta: DocMeta = {
+      const m: DocMeta = {
         path: null,
         encoding: entry.encoding,
         eol: entry.eol,
         dirty: true, // still unsaved
       };
-      appendAndActivate(createTab(entry.text ?? "", meta));
+      appendAndActivate(createTab(entry.text ?? "", m));
     }
   }
   // Activate the tab the user had active (clamped index).
