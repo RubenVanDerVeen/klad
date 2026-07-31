@@ -1,9 +1,12 @@
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { gotoLine, openSearchPanel, search, searchKeymap } from "@codemirror/search";
-import { Compartment, EditorState } from "@codemirror/state";
+import { Annotation, Compartment, EditorState } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 
 const wrapCompartment = new Compartment();
+
+// Marks transactions produced by setText so the dirty listener can ignore them.
+const programmatic = Annotation.define<boolean>();
 
 export function createEditor(
   parent: HTMLElement,
@@ -25,7 +28,12 @@ export function createEditor(
         keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
         wrapCompartment.of(initialWrap ? EditorView.lineWrapping : []),
         EditorView.updateListener.of((u) => {
-          if (u.docChanged) onDocChanged();
+          if (u.docChanged) {
+            const isProgrammatic = u.transactions.some(
+              (tr) => tr.annotation(programmatic) === true,
+            );
+            if (!isProgrammatic) onDocChanged();
+          }
           if (u.selectionSet || u.docChanged) {
             const pos = u.state.selection.main.head;
             const line = u.state.doc.lineAt(pos);
@@ -51,5 +59,6 @@ export function getText(view: EditorView): string {
 export function setText(view: EditorView, text: string): void {
   view.dispatch({
     changes: { from: 0, to: view.state.doc.length, insert: text },
+    annotations: programmatic.of(true),
   });
 }
