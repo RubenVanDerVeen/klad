@@ -1,5 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
-  <rect width="1024" height="1024" rx="180" fill="#1e66d0"/>
-  <text x="512" y="700" font-family="Segoe UI, Arial, sans-serif" font-size="560"
-        font-weight="700" fill="#ffffff" text-anchor="middle">K</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <path d="M150,80 L720,80 L880,240 L880,920 Q880,980 820,980 L150,980 Q90,980 90,920 L90,140 Q90,80 150,80 Z"
+        fill="#ffffff" stroke="#1e66d0" stroke-width="60" stroke-linejoin="round"/>
+  <path d="M720,80 L880,240 L720,240 Z"
+        fill="#e7eef7" stroke="#1e66d0" stroke-width="60" stroke-linejoin="round"/>
+  <line x1="240" y1="560" x2="760" y2="560" stroke="#a8b3c5" stroke-width="36" stroke-linecap="round"/>
+  <line x1="240" y1="680" x2="760" y2="680" stroke="#a8b3c5" stroke-width="36" stroke-linecap="round"/>
+  <line x1="240" y1="800" x2="640" y2="800" stroke="#a8b3c5" stroke-width="36" stroke-linecap="round"/>
+  <text x="490" y="430" font-family="Segoe UI, Arial, sans-serif" font-size="340" font-weight="700" fill="#1e66d0" text-anchor="middle">K</text>
 </svg>
