@@ -412,22 +412,10 @@ document.getElementById("editor")!.addEventListener(
 
 void appWindow.onCloseRequested(async (event) => {
   event.preventDefault();
-  for (const t of runtime) {
-    if (!t.meta.dirty) continue;
-    // Show the tab so the user sees what they're being asked about.
-    if (coll.activeId !== t.id) switchToTab(t.id);
-    const choice = await askSave(fileName(t.meta));
-    if (choice === "cancel") return; // abort shutdown
-    if (choice === "save") {
-      // doSave targets activeTab(), which we just switched to.
-      await doSave();
-      if (t.meta.dirty) return; // save was cancelled in Save As
-    } else if (choice === "discard") {
-      // True discard: clear dirty so persistSessionNow() below omits this buffer
-      // and the file re-reads from disk next launch (no ghost restore).
-      t.meta.dirty = false;
-    }
-  }
+  // Hot exit: silently stash every dirty buffer to localStorage and close.
+  // Edits are restored dirty on next launch (restoreSessionOrNew), so the user
+  // can save or discard then. Disk is never written here — save_file runs only
+  // on explicit Save/Save As. Per-tab close (closeTabById) still prompts.
   persistSessionNow();
   await appWindow.destroy();
 });
