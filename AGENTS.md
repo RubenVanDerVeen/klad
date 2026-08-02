@@ -59,7 +59,7 @@ Red flags (any one = stop and fix before committing):
 - **Default to a feature branch** for features: `feat/<scope>` or `plan-<name>`, cut from latest `main`. Small fixes (typos, single-line tweaks, dep bumps, docs) can land on `main`.
 - Commit messages: Conventional Commits 1.0.0 (`<type>(<scope>): <description>`). Scope = module (e.g. `feat(preview)`, `fix(encoding)`), never the discipline ("frontend"/"backend").
 - **Bundle related changes into a single commit.** One logical change = one commit.
-- Releases: push a `v*` tag; CI builds Windows + Linux artifacts into a draft GitHub release. Branch model in use: `main` + `feat/klad`.
+- Releases: push a `v*` tag; CI builds Windows + Linux artifacts into a draft GitHub release. Branch model: `main` with short-lived `feat/<scope>` feature branches cut from latest `main`.
 
 ## Artifacts
 
