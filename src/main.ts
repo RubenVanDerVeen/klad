@@ -426,20 +426,32 @@ initTabBar({
   onNew: () => void doNew(),
 });
 
-// Defense in depth: the Tauri menu accelerator already handles Ctrl+W / Ctrl+Tab on
-// most platforms, but this window-level keydown still fires (e.g. when the menu
-// accelerator is disabled or in dev builds), so we let it close/switch here too.
+// WebView2 (Windows) swallows a fixed set of "browser shortcuts" — Ctrl+N/O/S/Shift+S
+// and Ctrl+W — before the Tauri menu accelerator can see them. The accelerator is
+// unreachable from app code for these keys, but the keydown still fires on window,
+// so we reroute them here to the same fns the menu uses. On Linux (WebKitGTK) the
+// accelerator handles them and this is a no-op duplicate, neutralized by preventDefault.
 window.addEventListener("keydown", (e) => {
   const ctrl = e.ctrlKey || e.metaKey;
   if (!ctrl) return;
-  if (e.key === "w" || e.key === "W") {
+  const key = e.key.toLowerCase();
+  if (key === "w") {
     e.preventDefault();
     const id = coll.activeId;
     if (id) void closeTabById(id);
-  } else if (e.key === "Tab") {
+  } else if (key === "tab") {
     e.preventDefault();
     const target = e.shiftKey ? prevTab(coll) : nextTab(coll);
     if (target.activeId && target.activeId !== coll.activeId) switchToTab(target.activeId);
+  } else if (key === "n") {
+    e.preventDefault();
+    void doNew();
+  } else if (key === "o") {
+    e.preventDefault();
+    void doOpen();
+  } else if (key === "s") {
+    e.preventDefault();
+    void (e.shiftKey ? doSaveAs() : doSave());
   }
 });
 
