@@ -98,7 +98,7 @@ That is the entire code change. `persistSessionNow` (`main.ts:231-245`) already:
 - syncs `unsavedText = getText(view)` for **every** dirty tab (titled + untitled),
 - calls `saveSession(toSession(coll))`, which writes `text` for every dirty entry.
 
-Nothing else in `main.ts`, `session.ts`, `tabs.ts`, or the restore path changes.
+Nothing else in `main.ts`, `session.ts`, `tabs.ts`, or the restore path changes at authoring time. **Note added 2026-08-02:** the separate `docs/artifacts/specs/restore-on-launch/2026-08-02-restore-on-launch-design.md` later reopened the startup IIFE branch in `main.ts` to make session restore run even when klad is launched with a file argument — so dirty buffers stashed by this hot-exit change are no longer discarded on a cold double-click launch. That change is independent of the close-time behavior specified here.
 
 ### Why this is safe (no data-loss regression)
 - Dirty buffers are **stashed, not discarded.** The user loses nothing on close; they get a dirty restored tab next launch.

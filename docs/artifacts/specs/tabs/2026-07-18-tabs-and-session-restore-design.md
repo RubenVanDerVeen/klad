@@ -335,7 +335,9 @@ Grounded in existing klad tokens: `#d0d0d0` borders, `#444` text, white surfaces
 
 ### Multi-instance (non-goal, but documented behavior)
 
-If klad is launched with a CLI file argument (`getStartupFile()` returns a path), session restore is **skipped** for that launch — only that file opens. This avoids the "double-click file A → get A plus the saved session B/C/D" surprise. The rule:
+**Superseded 2026-08-02** by `docs/artifacts/specs/restore-on-launch/2026-08-02-restore-on-launch-design.md`. The "skip session restore when launched with a CLI file argument" rule documented here was defensive against multi-instance last-writer-wins across divergent localStorage views. Two later changes made it obsolete: single-instance mode (`docs/artifacts/specs/single-instance/2026-07-18-single-instance-design.md`, exactly one long-lived instance, second launches forward their argv and exit) and hot-exit (`docs/artifacts/specs/hot-exit/2026-08-01-hot-exit-design.md`, close now silently stashes every dirty buffer). The current behavior is: a cold double-clicked-file launch restores the saved session **and then** opens the startup file alongside it, matching the already-running forward path. See the restore-on-launch spec for the full behavior matrix and rationale.
+
+The original rule was:
 
 ```
 startupFile = await getStartupFile();
@@ -345,8 +347,6 @@ if (startupFile) {
   await restoreSessionOrNew();   // restore saved session, else one fresh untitled tab
 }
 ```
-
-A second OS-launched instance has its own localStorage view and will write its own session on close. Last-writer-wins across instances; the saved session reflects whichever instance closed last. This is acceptable for v1 and documented in §11.
 
 ## 9. Menu and keyboard
 
