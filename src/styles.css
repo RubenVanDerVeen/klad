@@ -222,6 +222,6 @@ dialog {
 [data-theme="dark"] .cm-editor { background-color: var(--bg); color: var(--fg); }
 [data-theme="dark"] .cm-gutters { background-color: var(--panel-bg); border-right: 1px solid var(--border); color: var(--fg-muted); }
 [data-theme="dark"] .cm-content { color: var(--fg); }
-[data-theme="dark"] .cm-cursor { border-left-color: var(--accent); }
+[data-theme="dark"] .cm-cursor { border-left-color: #e6e6e9; }
 [data-theme="dark"] .cm-selectionBackground,
-[data-theme="dark"] .cm-content ::selection { background-color: var(--hover-bg); }
+[data-theme="dark"] .cm-content ::selection { background-color: #264f78; }
