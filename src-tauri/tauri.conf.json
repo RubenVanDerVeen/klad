@@ -38,7 +38,8 @@
       { "ext": ["md", "markdown"], "name": "Markdown Document", "description": "Markdown Document", "mimeType": "text/markdown", "role": "Editor" },
       { "ext": ["log"], "name": "Log File", "description": "Log File", "mimeType": "text/plain", "role": "Editor" },
       { "ext": ["ini"], "name": "Configuration File", "description": "Configuration File", "mimeType": "text/plain", "role": "Editor" },
-      { "ext": ["cfg"], "name": "Configuration File", "description": "Configuration File", "mimeType": "text/plain", "role": "Editor" }
+      { "ext": ["cfg"], "name": "Configuration File", "description": "Configuration File", "mimeType": "text/plain", "role": "Editor" },
+      { "ext": ["typ", "typst"], "name": "Typst Document", "description": "Typst Document", "mimeType": "text/x-typst", "role": "Editor" }
     ],
     "windows": {
       "nsis": { "installMode": "currentUser" }

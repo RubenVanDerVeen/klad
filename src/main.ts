@@ -13,6 +13,7 @@ import { initStatusBar, setCursor, setEncoding, setEol, setZoomDisplay } from ".
 import {
   isPreviewVisible,
   renderPreviewNow,
+  setPreviewKind,
   setPreviewVisible,
   syncPreviewScroll,
   updatePreview,
@@ -32,7 +33,7 @@ import {
 import { initTabBar, renderTabs, TabView } from "./tabbar";
 
 const FILTERS = [
-  { name: "Text files", extensions: ["txt", "md", "markdown", "log", "ini", "cfg"] },
+  { name: "Text files", extensions: ["txt", "md", "markdown", "log", "ini", "cfg", "typ", "typst"] },
   { name: "All files", extensions: ["*"] },
 ];
 
@@ -178,11 +179,18 @@ function isMarkdown(m: DocMeta): boolean {
   return /\.(md|markdown)$/i.test(m.path ?? "");
 }
 
+function isTypst(m: DocMeta): boolean {
+  return /\.(typ|typst)$/i.test(m.path ?? "");
+}
+
 function applyPreviewMode(): void {
-  const on = isMarkdown(meta);
-  setPreviewVisible(on);
-  if (on) renderPreviewNow(getText(activeTab().view));
-  void menuHandles?.previewItem.setChecked(on);
+  const kind: "md" | "typ" | null = isMarkdown(meta) ? "md" : isTypst(meta) ? "typ" : null;
+  setPreviewVisible(kind !== null);
+  // setPreviewKind must run before renderPreviewNow so the sync 'md' branch
+  // dispatches correctly. For 'typ' the kind is read inside the async branch.
+  setPreviewKind(kind === "typ" ? "typ" : "md");
+  if (kind) renderPreviewNow(getText(activeTab().view));
+  void menuHandles?.previewItem.setChecked(kind !== null);
 }
 
 function showOnly(view: EditorView): void {
