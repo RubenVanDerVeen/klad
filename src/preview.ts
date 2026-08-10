@@ -105,6 +105,8 @@ export function renderPreviewNow(text: string): void {
     void renderTypstNow(text); // fire-and-forget; race-guarded internally
     return;
   }
+  // hide any typ banner from the previous tab — sync md render doesn't go through applyTypstResult
+  hideErrorBanner();
   pane().innerHTML = renderMarkdown(text);
 }
 
