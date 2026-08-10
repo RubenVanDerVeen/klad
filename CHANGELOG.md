@@ -10,9 +10,9 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Work in progress for upcoming milestones.
 
-### Added: pending
+### Added
 
-- _TBD_
+- **Typst single-file live preview** — `.typ` and `.typst` files render a live SVG preview via embedded `typst` compile (single-file only: no `#include`/`#import`, no `@preview` packages, no system fonts). Auto-toggles alongside the existing Markdown preview; error banner shows compile errors while keeping the last-good render.
 
 ---
 
