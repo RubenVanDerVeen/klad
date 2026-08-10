@@ -27,7 +27,7 @@ Klad is a cross-platform Notepad replacement (Windows + Linux) with live Markdow
 - New capabilities/permissions go in `src-tauri/capabilities/default.json` (Tauri 2 ACL).
 
 ### Preview auto-toggle
-- `applyPreviewMode()` in `main.ts` shows the pane iff the path matches `/\.(md|markdown)$/i`; the menu checkbox must stay in sync via `menuHandles?.previewItem.setChecked(on)`. Adding a previewable extension touches both.
+- `applyPreviewMode()` in `main.ts` shows the pane iff the active tab's path matches `/\.(md|markdown|typ|typst)$/i`; `isMarkdown`/`isTypst` derive a `previewKind: "md" | "typ"` and push it into `preview.ts` via `setPreviewKind` so the dispatch picks the right renderer (sync Markdown vs. async Typst compile). The menu checkbox must stay in sync via `menuHandles?.previewItem.setChecked(on)`. Adding a previewable extension touches both the regex and the kind switch in `preview.ts`.
 
 ### No web framework
 - UI uses native `<dialog>` + direct DOM. `index.html` holds dialog markup referenced by id from `main.ts`/`openFontDialog`. Don't introduce React/Svelte.
