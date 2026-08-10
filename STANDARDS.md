@@ -121,6 +121,7 @@ Klad's shipped artefacts (NSIS installer, `.deb`, `.AppImage`) are produced by C
 
 - `specs/YYYY-MM-DD-<topic>-design.md` — design specs.
 - `plans/YYYY-MM-DD-<topic>-plan.md` — implementation plans.
+- `features/YYYY-MM-DD-<topic>-report.md` — execution reports for completed plans (per-task disposition, commit log, verifier output, standardizer findings, smoke status).
 - `reviews/YYYY-MM-DD-<topic>-review.md` — audits/reviews; this project also stores SDD execution checklists here as `klad-sp<N>-checklist.md`.
 - `multi-plans/klad/` — `<topic>-outline.md` + `<topic>-manifest.md` from `multi-plan-orchestration`.
 

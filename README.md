@@ -8,7 +8,8 @@ Simple cross-platform Notepad replacement (Windows + Linux) with live Markdown p
 - Find/replace, go-to-line, word wrap, zoom, font choice
 - Encodings: UTF-8 (±BOM), UTF-16 LE/BE, legacy (windows-125x); CRLF/LF switching
 - Live split Markdown preview (GFM) for `.md` files
-- Opens anything Notepad opens: `.txt` `.md` `.log` `.ini` `.cfg`
+- Live Typst preview (embedded `typst` compile, SVG per page) for `.typ`/`.typst` files — single-file only (no `#include`/`#import`, no `@preview` packages)
+- Opens anything Notepad opens: `.txt` `.md` `.log` `.ini` `.cfg` `.typ` `.typst`
 
 ## Install
 
@@ -19,7 +20,7 @@ Grab the installer from the Releases page:
 
 ## Make Klad your default editor
 
-**Windows:** Settings → Apps → Default apps → Klad → add `.txt`, `.md`, `.log`, `.ini`, `.cfg`.
+**Windows:** Settings → Apps → Default apps → Klad → add `.txt`, `.md`, `.log`, `.ini`, `.cfg`, `.typ`, `.typst`.
 (Or right-click a file → Open with → Choose another app → Klad → Always.)
 
 **Linux:**
