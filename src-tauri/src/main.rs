@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod fs_cmds;
+mod typst_compile;
 
 use serde::Serialize;
 use tauri::{Emitter, Manager};
@@ -31,7 +32,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             fs_cmds::read_file,
             fs_cmds::save_file,
-            fs_cmds::get_startup_file
+            fs_cmds::get_startup_file,
+            typst_compile::compile_typst
         ])
         .run(tauri::generate_context!())
         .expect("error while running Klad");
