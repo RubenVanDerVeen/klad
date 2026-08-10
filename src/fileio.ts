@@ -24,6 +24,20 @@ export function getStartupFile(): Promise<string | null> {
   return invoke<string | null>("get_startup_file");
 }
 
+export interface TypstError {
+  message: string;
+  line?: number | null;
+}
+
+export interface TypstResult {
+  pages: string[];
+  errors: TypstError[];
+}
+
+export function compileTypst(text: string): Promise<TypstResult> {
+  return invoke<TypstResult>("compile_typst", { text });
+}
+
 /**
  * Pull the forwarded file paths out of a "single-instance" event payload.
  * Returns argv[1..] (argv[0] is the executable name) when the payload is the
