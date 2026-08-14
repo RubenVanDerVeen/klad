@@ -18,6 +18,7 @@ Two layers: formal ISO/IEC/IEEE norms and industry conventions. Klad is a solo t
 | English structural paths  | **yes**       | Dir/file names in English; content may be Dutch where needed |
 | Conventional Commits 1.0.0 | **yes**       | Commit messages |
 | Keep a Changelog 1.1.0    | **yes**       | `CHANGELOG.md` format |
+| SemVer 2.0.0              | **yes**       | Release versions for shipped artefacts (canonical source: `src-tauri/tauri.conf.json` → `version`; sync targets: `package.json`, `src-tauri/Cargo.toml`) |
 
 Not applied (solo tool, no sprints / formal test docs / research output): ISO/IEC/IEEE 26515, 26514, 29119-3, 15289; IEEE article format.
 
@@ -117,15 +118,21 @@ Klad's shipped artefacts (NSIS installer, `.deb`, `.AppImage`) are produced by C
 
 ## Specs, plans, reviews
 
-`docs/artifacts/` holds process meta-documents:
+`docs/artifacts/` holds process meta-documents. The only canonical top-level directory is `features/`; everything else is being migrated into it.
 
-- `specs/YYYY-MM-DD-<topic>-design.md` — design specs.
-- `plans/YYYY-MM-DD-<topic>-plan.md` — implementation plans.
-- `features/YYYY-MM-DD-<topic>-report.md` — execution reports for completed plans (per-task disposition, commit log, verifier output, standardizer findings, smoke status).
-- `reviews/YYYY-MM-DD-<topic>-review.md` — audits/reviews; this project also stores SDD execution checklists here as `klad-sp<N>-checklist.md`.
-- `multi-plans/klad/` — `<topic>-outline.md` + `<topic>-manifest.md` from `multi-plan-orchestration`.
+Canonical layout:
 
-This project groups specs/plans under `specs/klad/` and `plans/klad/` (multi-plan topic subfolder). Each artefact is append-only history; if a design changes mid-implementation, edit in place + add an `## Amendments` section. Filenames use the `YYYY-MM-DD-<kebab-topic>-<type>.md` grammar.
+```
+docs/artifacts/features/<feature>/
+├── YYYY-MM-DD-<feature>-design.md       ← spec
+├── YYYY-MM-DD-<feature>-plan.md         ← implementation plan
+├── YYYY-MM-DD-<feature>-report.md       ← execution report
+└── YYYY-MM-DD-<feature>-<type>.md       ← any reviews/audits for this feature
+```
+
+`multi-plan-orchestration` outlines and manifests land at `docs/artifacts/features/<topic>/` (no separate `multi-plans/` bucket).
+
+Historical `docs/artifacts/specs/`, `docs/artifacts/plans/`, `docs/artifacts/multi-plans/`, and stray items under `docs/artifacts/reviews/` are being migrated into `features/<feature>/`. Do not add new files to the legacy buckets; create the new one in `features/` instead. Each artefact is append-only history; if a design changes mid-implementation, edit in place + add an `## Amendments` section. Filenames use the `YYYY-MM-DD-<kebab-topic>-<type>.md` grammar.
 
 ---
 
