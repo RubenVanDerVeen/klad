@@ -1,6 +1,8 @@
 # Klad: Agent Context
 
 ## Overview
+- Tier: medium.
+
 Klad is a cross-platform Notepad replacement for Windows and Linux with live Markdown and Typst preview. It is a single-author Tauri 2 application with a vanilla TypeScript frontend and Rust backend.
 
 ## Key Facts
