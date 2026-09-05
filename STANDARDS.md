@@ -31,7 +31,7 @@ Not applied (solo tool, no sprints / formal test docs / research output): ISO/IE
 Lowercase letters, digits, and hyphens only. No spaces, no underscores, no PascalCase, no non-ASCII.
 
 ```
-✅ docs/artifacts/multi-plans/klad/
+✅ docs/artifacts/features/typst/2026-08-10-typst-single-file-preview-report.md
 ✅ 2026-07-16-klad-sp1-editor-design.md
 ❌ Klad SP1/Editor Design.md
 ❌ klad_sp1_design.md
@@ -118,21 +118,22 @@ Klad's shipped artefacts (NSIS installer, `.deb`, `.AppImage`) are produced by C
 
 ## Specs, plans, reviews
 
-`docs/artifacts/` holds process meta-documents. The only canonical top-level directory is `features/`; everything else is being migrated into it.
+`docs/artifacts/` holds process meta-documents. Two top-level dirs: `reviews/` (flat log) and `features/<feature>/` (one folder per feature, flat contents, filename suffix signals type).
 
-Canonical layout:
+Per-feature artefacts (all under one folder):
 
-```
-docs/artifacts/features/<feature>/
-├── YYYY-MM-DD-<feature>-design.md       ← spec
-├── YYYY-MM-DD-<feature>-plan.md         ← implementation plan
-├── YYYY-MM-DD-<feature>-report.md       ← execution report
-└── YYYY-MM-DD-<feature>-<type>.md       ← any reviews/audits for this feature
-```
+- `docs/artifacts/features/<feature>/YYYY-MM-DD-<topic>-design.md`: design spec.
+- `docs/artifacts/features/<feature>/YYYY-MM-DD-<topic>-plan.md`: implementation plan.
+- `docs/artifacts/features/<feature>/YYYY-MM-DD-<topic>-report.md`: execution report for a completed plan.
 
-`multi-plan-orchestration` outlines and manifests land at `docs/artifacts/features/<topic>/` (no separate `multi-plans/` bucket).
+Reviews (flat log, not per-feature):
 
-Historical `docs/artifacts/specs/`, `docs/artifacts/plans/`, `docs/artifacts/multi-plans/`, and stray items under `docs/artifacts/reviews/` are being migrated into `features/<feature>/`. Do not add new files to the legacy buckets; create the new one in `features/` instead. Each artefact is append-only history; if a design changes mid-implementation, edit in place + add an `## Amendments` section. Filenames use the `YYYY-MM-DD-<kebab-topic>-<type>.md` grammar.
+- `docs/artifacts/reviews/YYYY-MM-DD-<topic>-review.md`: audits and reviews.
+- `docs/artifacts/reviews/YYYY-MM-DD-<topic>-audit.md`: same shape, suffix variant for audits.
+
+`multi-plan-orchestration` outlines and manifests also live inside the relevant `features/<topic>/` folder; there is no separate `multi-plans/` bucket.
+
+Historical `docs/artifacts/specs/`, `docs/artifacts/plans/`, and `docs/artifacts/multi-plans/` are being migrated into `features/<feature>/`. Do not add new files to the legacy buckets; create the new one in `features/` instead. Each artefact is append-only history; if a design changes mid-implementation, edit in place + add an `## Amendments` section. Filenames use the `YYYY-MM-DD-<kebab-topic>-<type>.md` grammar.
 
 ---
 
@@ -147,6 +148,7 @@ Historical `docs/artifacts/specs/`, `docs/artifacts/plans/`, `docs/artifacts/mul
 
 ## References
 
+- Full standards-stack rationale: research paper <https://portfolio.rvdv-lab.nl/research.html?id=project-standaardenpakket-voor-het-idp-project> (local copy at `docs/research/<paper>.pdf` when present).
 - Conventional Commits 1.0.0: <https://www.conventionalcommits.org/en/v1.0.0/>
 - Keep a Changelog 1.1.0: <https://keepachangelog.com/en/1.1.0/>
 - ISO 8601 date format: <https://www.iso.org/iso-8601-date-and-time-format.html>
