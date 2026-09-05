@@ -1,0 +1,36 @@
+#!/bin/sh
+# commit-msg hook: enforce Conventional Commits 1.0.0 on the subject line.
+# ponytail: this is commitlint's job done with stdlib (git hooks + grep).
+# Ceiling: no automated test; no config-conventional extras (subject-case,
+# header-max-length, body-max-line-length). Re-verify with the sample messages
+# in the plan/spec if the regex changes. Upgrade path: swap for @commitlint/cli
+# + husky if those rule sets are needed (adds node_modules to this repo).
+
+msg_file="$1"
+
+# Subject = first line that is not blank and not a '#' comment.
+subject=$(grep -vE '^[#[:space:]]*$' "$msg_file" | head -n 1)
+
+# Skip git-internal messages we do not rewrite into Conventional Commits.
+case "$subject" in
+  "Merge "*|"Revert "*|"fixup! "*|"squash! "*) exit 0 ;;
+esac
+
+# Conventional Commits: <type>(<scope>)!: <description>
+regex='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?: .+'
+
+if ! printf '%s\n' "$subject" | grep -qE "$regex"; then
+  cat >&2 <<EOF
+commit-msg: rejected, not Conventional Commits 1.0.0
+
+  $subject
+
+Expected: <type>(<scope>)!: <description>
+Types:   feat fix docs style refactor perf test build ci chore revert
+Scope:   optional, e.g. (skills)
+Example: feat(skills): add commitlint hook
+
+Bypass (emergencies only): git commit --no-verify
+EOF
+  exit 1
+fi

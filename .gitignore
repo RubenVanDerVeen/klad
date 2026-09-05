@@ -3,3 +3,5 @@ dist/
 src-tauri/target/
 src-tauri/gen/
 app-icon.png
+graphify-out/
+.superpowers/
