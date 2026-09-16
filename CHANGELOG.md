@@ -21,7 +21,7 @@ Work in progress for upcoming milestones.
 
 ---
 
-## [0.3.0]: 2026-08-02
+## [0.3.0] - 2026-08-02
 
 First tagged release (`v*` tag triggers CI to build Windows + Linux artifacts). Supersedes the untagged 0.2.0 version-string bump. Major shift from single-file to multi-tab editing.
 
@@ -43,7 +43,7 @@ First tagged release (`v*` tag triggers CI to build Windows + Linux artifacts). 
 
 ---
 
-## [0.1.0]: 2026-07-17
+## [0.1.0] - 2026-07-17
 
 Initial release: cross-platform Notepad replacement with live Markdown preview (Tauri 2 + CodeMirror 6).
 
@@ -60,3 +60,4 @@ Initial release: cross-platform Notepad replacement with live Markdown preview (
 [Unreleased]: #unreleased
 [0.3.0]: #0302026-08-02
 [0.1.0]: #01102026-07-17
+[0.4.0]: #040-2026-09-16
