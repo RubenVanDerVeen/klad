@@ -58,6 +58,6 @@ Initial release: cross-platform Notepad replacement with live Markdown preview (
 ---
 
 [Unreleased]: #unreleased
-[0.3.0]: #0302026-08-02
-[0.1.0]: #01102026-07-17
-[0.4.0]: #040-2026-09-16
+[0.3.0]: #030---2026-08-02
+[0.1.0]: #010---2026-07-17
+[0.4.0]: #040---2026-09-16
