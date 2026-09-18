@@ -6,9 +6,10 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ---
 
-## [Unreleased]
+## [0.5.0] - 2026-09-19
 
-Work in progress for upcoming milestones.
+### Added
+- Markdown preview: KaTeX math (`$...$`, `$$...$$`), Mermaid diagrams, interactive function plots (` ```plot `), two-column layouts (` ```columns `), image scaling (`{N%}`), relative image resolution against the open file, and YAML frontmatter rendered as a table
 
 ## [0.4.0] - 2026-09-16
 
@@ -61,3 +62,4 @@ Initial release: cross-platform Notepad replacement with live Markdown preview (
 [0.3.0]: #030---2026-08-02
 [0.1.0]: #010---2026-07-17
 [0.4.0]: #040---2026-09-16
+[0.5.0]: #050---2026-09-19

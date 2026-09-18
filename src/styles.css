@@ -159,6 +159,51 @@ dialog {
   max-width: 100%;
 }
 
+/* Rich preview blocks (columns, plots, mermaid) — console flavor */
+#preview .md-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  #preview .md-columns {
+    grid-template-columns: 1fr;
+  }
+}
+#preview .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+#preview .mermaid svg,
+#preview .plot svg {
+  max-width: 100%;
+}
+/* function-plot draws axes black@0.1 — map to theme vars (console app.css:579) */
+#preview .plot svg .x.axis path.domain,
+#preview .plot svg .y.axis path.domain {
+  stroke: var(--fg);
+  stroke-width: 2px;
+}
+#preview .plot svg .tick line {
+  stroke: var(--fg-muted);
+  opacity: 0.35;
+}
+#preview .plot-error,
+#preview .mermaid-error {
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  color: #b00;
+  padding: 8px 10px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  font-family: Consolas, monospace;
+  font-size: 85%;
+}
+[data-theme="dark"] #preview .plot-error,
+[data-theme="dark"] #preview .mermaid-error {
+  color: #f87171;
+}
+
 /* Tab bar */
 #tabbar {
   display: flex;
@@ -225,3 +270,9 @@ dialog {
 [data-theme="dark"] .cm-cursor { border-left-color: #e6e6e9; }
 [data-theme="dark"] .cm-selectionBackground,
 [data-theme="dark"] .cm-content ::selection { background-color: #264f78; }
+
+#preview table.frontmatter {
+  font-size: 85%;
+  color: var(--fg-muted);
+}
+
