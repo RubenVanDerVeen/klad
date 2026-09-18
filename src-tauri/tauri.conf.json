@@ -18,7 +18,16 @@
         "height": 700
       }
     ],
-    "security": { "csp": null }
+    "security": {
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "**/*.png", "**/*.jpg", "**/*.jpeg", "**/*.gif", "**/*.svg",
+          "**/*.webp", "**/*.bmp", "**/*.avif", "**/*.ico"
+        ]
+      }
+    }
   },
   "bundle": {
     "active": true,
