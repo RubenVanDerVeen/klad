@@ -110,7 +110,9 @@ const frontmatterExtension: TokenizerAndRendererExtension = {
   tokenizer(src: string) {
     const m = FRONTMATTER_RE.exec(src);
     if (!m) return undefined;
-    const ok = m[1].split("\n").every((line) => line === "" || YAML_LINE_RE.test(line));
+    const lines = m[1].split("\n");
+    const hasKey = lines.some((l) => /^[A-Za-z_][\w-]*\s*:(\s|$)/.test(l));
+    const ok = lines.every((line) => line === "" || YAML_LINE_RE.test(line)) && hasKey;
     if (!ok) return undefined;
     return { type: "frontmatter", raw: m[0], text: m[1] };
   },

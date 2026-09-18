@@ -128,6 +128,12 @@ describe("renderMarkdown", () => {
     expect(html).not.toContain("<h2>title");
   });
 
+  it("keeps indented-only frontmatter bodies as regular markdown", () => {
+    const html = renderMarkdown("---\n  just indented prose\n---");
+    expect(html).not.toContain("frontmatter");
+    expect(html).toContain("just indented prose");
+  });
+
   it("keeps plain hr separators as hr", () => {
     const html = renderMarkdown("---\n\nsome text\n\n---");
     expect(html).toContain("<hr>");
