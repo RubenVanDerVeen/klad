@@ -57,6 +57,17 @@ describe("renderMarkdown", () => {
     expect(html).toContain("katex");
   });
 
+  it("renders display math after text in the same paragraph", () => {
+    const html = renderMarkdown("Euler:\n$$\ne^{i\\pi}\n$$");
+    expect(html).toContain("Euler:");
+    expect(html).toContain("katex-display");
+  });
+
+  it("keeps single-dollar math single-line", () => {
+    const html = renderMarkdown("a $x\ny$ b");
+    expect(html).not.toContain("katex");
+  });
+
   it("emits a mermaid host with visible source", () => {
     const html = renderMarkdown("```mermaid\nflowchart TD\n  A x B\n```");
     expect(html).toContain('class="mermaid"');

@@ -132,10 +132,17 @@ const mathInline: TokenizerAndRendererExtension = {
     if (!open) return undefined;
     const closeIdx = src.indexOf(open, open.length);
     if (closeIdx < 0) return undefined;
-    const latex = src.slice(open.length, closeIdx);
-    if (latex.length === 0) return undefined;
-    if (/[$\n]/.test(latex.replace(/\\\$/g, ""))) return undefined;
-    if (/^\s|\s$/.test(latex)) return undefined;
+    let latex = src.slice(open.length, closeIdx);
+    if (open.length === 2) {
+      // Display math: pandoc-style $$ may span lines mid-paragraph.
+      latex = latex.trim();
+      if (latex.length === 0) return undefined;
+    } else {
+      if (latex.length === 0) return undefined;
+      if (/\n/.test(latex)) return undefined;
+      if (/^\s|\s$/.test(latex)) return undefined;
+    }
+    if (/\$/.test(latex.replace(/\\\$/g, ""))) return undefined;
     if (PURE_AMOUNT_RE.test(latex)) return undefined;
     if (/[0-9]/.test(src.charAt(closeIdx + open.length))) return undefined;
     return {
