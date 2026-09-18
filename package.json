@@ -18,9 +18,11 @@
     "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/plugin-dialog": "^2.2.0",
     "dompurify": "^3.4.12",
+    "function-plot": "^1.25.4",
     "katex": "^0.18.7",
     "marked": "^15.0.12",
-    "marked-katex-extension": "^5.1.13"
+    "marked-katex-extension": "^5.1.13",
+    "mermaid": "^11.17.2"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.5.0",
