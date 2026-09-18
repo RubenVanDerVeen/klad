@@ -98,7 +98,43 @@ const imageSizeExtension: TokenizerAndRendererExtension = {
   },
 };
 
-marked.use({ extensions: [imageSizeExtension, mermaidExtension, plotExtension, columnsExtension] });
+const FRONTMATTER_RE = /^---[ \t]*\n([\s\S]+?)\n---[ \t]*(?:\n|$)/;
+// A line is yaml-ish if it is a `key: value` line or nested/continuation
+// content (indented, e.g. list items under a key). The gate keeps plain
+// `--- / text / ---` hr separators rendering as before.
+const YAML_LINE_RE = /^([A-Za-z_][\w-]*\s*:(\s|$)|\s)/;
+
+const frontmatterExtension: TokenizerAndRendererExtension = {
+  name: "frontmatter",
+  level: "block",
+  tokenizer(src: string) {
+    const m = FRONTMATTER_RE.exec(src);
+    if (!m) return undefined;
+    const ok = m[1].split("\n").every((line) => line === "" || YAML_LINE_RE.test(line));
+    if (!ok) return undefined;
+    return { type: "frontmatter", raw: m[0], text: m[1] };
+  },
+  renderer(token) {
+    const rows: Array<[string, string]> = [];
+    for (const line of String(token.text ?? "").split("\n")) {
+      if (/^\s/.test(line)) {
+        const cont = line.trim().replace(/^- /, "");
+        if (cont && rows.length > 0) rows[rows.length - 1][1] += " " + cont;
+      } else {
+        const m = /^([A-Za-z_][\w-]*)\s*:\s*(.*)$/.exec(line);
+        if (m) rows.push([m[1], m[2]]);
+      }
+    }
+    const trs = rows
+      .map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`)
+      .join("");
+    return `<table class="frontmatter">${trs}</table>`;
+  },
+};
+
+marked.use({
+  extensions: [frontmatterExtension, imageSizeExtension, mermaidExtension, plotExtension, columnsExtension],
+});
 
 // --- KaTeX ($...$ inline, $$...$$ block) — ported from hermes-console
 // frontend/src/lib/markdown.ts:172-234. marked-katex owns BLOCK math only;

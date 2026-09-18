@@ -114,4 +114,24 @@ describe("renderMarkdown", () => {
     const html = renderMarkdown("```mermaid\nx\n```\n\n<script>alert(1)</script>");
     expect(html).not.toContain("<script");
   });
+
+  it("renders YAML frontmatter as a table", () => {
+    const html = renderMarkdown(
+      "---\ntitle: My note\ndate: 2026-09-18\ntags:\n  - klad\n  - rust\n---\n\n# Body",
+    );
+    expect(html).toContain('<table class="frontmatter">');
+    expect(html).toContain("<td>title</td>");
+    expect(html).toContain("<td>My note</td>");
+    expect(html).toContain("klad");
+    expect(html).toContain("rust");
+    expect(html).toContain("<h1>Body</h1>");
+    expect(html).not.toContain("<h2>title");
+  });
+
+  it("keeps plain hr separators as hr", () => {
+    const html = renderMarkdown("---\n\nsome text\n\n---");
+    expect(html).toContain("<hr>");
+    expect(html).toContain("<p>some text</p>");
+    expect(html).not.toContain("frontmatter");
+  });
 });
