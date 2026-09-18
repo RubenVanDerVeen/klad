@@ -5,6 +5,101 @@ import markedKatex from "marked-katex-extension";
 
 marked.setOptions({ gfm: true, breaks: false });
 
+// --- Host extensions (mermaid / plot / columns / sized image) ---
+// Sanitized hosts for Task 3 to mount SVGs onto live DOM. The data-src
+// attribute carries the raw source; the visible body is escaped.
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+const mermaidExtension: TokenizerAndRendererExtension = {
+  name: "mermaid",
+  level: "block",
+  start(src: string) {
+    return src.match(/^```mermaid[ \t]*$/mi)?.index;
+  },
+  tokenizer(src: string) {
+    const m = /^```mermaid[ \t]*\n([\s\S]*?)\n```/i.exec(src);
+    if (m) return { type: "mermaid", raw: m[0], text: m[1] };
+    return undefined;
+  },
+  renderer(token) {
+    const src = String(token.text ?? "");
+    return `<div class="mermaid" data-src="${escapeAttr(src)}">${escapeHtml(src)}</div>`;
+  },
+};
+
+const plotExtension: TokenizerAndRendererExtension = {
+  name: "plot",
+  level: "block",
+  start(src: string) {
+    return src.match(/^```plot[ \t]*$/mi)?.index;
+  },
+  tokenizer(src: string) {
+    const m = /^```plot[ \t]*\n([\s\S]*?)\n```/i.exec(src);
+    if (m) return { type: "plot", raw: m[0], text: m[1] };
+    return undefined;
+  },
+  renderer(token) {
+    const src = String(token.text ?? "");
+    return `<div class="plot" data-src="${escapeAttr(src)}">${escapeHtml(src)}</div>`;
+  },
+};
+
+const columnsExtension: TokenizerAndRendererExtension = {
+  name: "columns",
+  level: "block",
+  start(src: string) {
+    return src.match(/^```columns[ \t]*$/mi)?.index;
+  },
+  tokenizer(src: string) {
+    const m = /^```columns[ \t]*\n([\s\S]*?)\n```/i.exec(src);
+    if (m) return { type: "columns", raw: m[0], text: m[1] };
+    return undefined;
+  },
+  renderer(token) {
+    const body = String(token.text ?? "");
+    // Split on every line that is exactly "||" (optional trailing spaces/tabs).
+    const parts = body.split(/^\|\|[ \t]*$/m);
+    const cols = parts
+      .map((p) => `<div class="md-col">${marked.parse(p, { async: false }) as string}</div>`)
+      .join("");
+    return `<div class="md-columns">${cols}</div>`;
+  },
+};
+
+const IMG_SIZE_RE = /^!\[([^\]]*)\]\(([^)\s]+)\)\{(\d{1,3}(?:\.\d+)?)%\}/;
+
+const imageSizeExtension: TokenizerAndRendererExtension = {
+  name: "imageSize",
+  level: "inline",
+  start(src: string) {
+    return src.indexOf("![");
+  },
+  tokenizer(src: string) {
+    const m = IMG_SIZE_RE.exec(src);
+    if (!m) return undefined;
+    const pct = parseFloat(m[3]!);
+    if (!(pct > 0 && pct <= 100)) return undefined;
+    return { type: "imageSize", raw: m[0], alt: m[1], src: m[2], size: m[3] + "%" };
+  },
+  renderer(token) {
+    const src = String(token.src);
+    const alt = String(token.alt);
+    const size = String(token.size);
+    return (
+      `<img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}"` +
+      ` style="width:${size}" data-size="${size}">`
+    );
+  },
+};
+
+marked.use({ extensions: [imageSizeExtension, mermaidExtension, plotExtension, columnsExtension] });
+
 // --- KaTeX ($...$ inline, $$...$$ block) — ported from hermes-console
 // frontend/src/lib/markdown.ts:172-234. marked-katex owns BLOCK math only;
 // its inline rule is looser than mathInline below and would render
