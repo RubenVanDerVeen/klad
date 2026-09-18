@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Work in progress for upcoming milestones.
 
+### Added
+- Markdown preview: KaTeX math (`$...$`, `$$...$$`), Mermaid diagrams, interactive function plots (` ```plot `), two-column layouts (` ```columns `), image scaling (`{N%}`), and relative image resolution against the open file
+
 ## [0.4.0] - 2026-09-16
 
 ### Added
