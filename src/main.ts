@@ -1,3 +1,4 @@
+import "katex/dist/katex.min.css";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { gotoLine, openSearchPanel } from "@codemirror/search";

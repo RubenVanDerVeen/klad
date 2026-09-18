@@ -36,4 +36,24 @@ describe("renderMarkdown", () => {
     expect(html).toContain("<h1>Title</h1>");
     expect(html).toContain("<code>code</code>");
   });
+
+  it("renders inline math", () => {
+    const html = renderMarkdown("Euler: $e^{i\\pi}$");
+    expect(html).toContain("katex");
+  });
+
+  it("renders block math", () => {
+    const html = renderMarkdown("$$\nx^2 - 2\n$$");
+    expect(html).toContain("katex-display");
+  });
+
+  it("keeps pure currency amounts literal", () => {
+    const html = renderMarkdown("costs $100$ today");
+    expect(html).not.toContain("katex");
+  });
+
+  it("renders math glued to prose", () => {
+    const html = renderMarkdown("a$x^2$b");
+    expect(html).toContain("katex");
+  });
 });
