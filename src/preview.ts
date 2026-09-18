@@ -1,5 +1,7 @@
 import { renderMarkdown } from "./render";
 import { compileTypst, type TypstError, type TypstResult } from "./fileio";
+import { mountRichBlocks } from "./rich-blocks";
+import { resolveImages } from "./images";
 
 export function debounce<T extends unknown[]>(
   fn: (...args: T) => void,
@@ -23,6 +25,15 @@ let previewKind: PreviewKind = "md";
 
 export function setPreviewKind(kind: PreviewKind): void {
   previewKind = kind;
+}
+
+// --- preview base dir (for relative image resolution) -----------------------
+
+let previewBaseDir: string | null = null;
+
+/** Directory of the active tab's file; null for untitled tabs. */
+export function setPreviewBaseDir(path: string | null): void {
+  previewBaseDir = path;
 }
 
 // --- visibility -----------------------------------------------------------
@@ -108,6 +119,8 @@ export function renderPreviewNow(text: string): void {
   // hide any typ banner from the previous tab — sync md render doesn't go through applyTypstResult
   hideErrorBanner();
   pane().innerHTML = renderMarkdown(text);
+  resolveImages(pane(), previewBaseDir);
+  void mountRichBlocks(pane()); // fire-and-forget; guards detached nodes itself
 }
 
 const updatePreviewMd = debounce(renderPreviewNow, 150);
