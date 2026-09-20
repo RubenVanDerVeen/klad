@@ -1,10 +1,10 @@
-# Klad Foundation — Design
+# Klad Foundation - Design
 
 Part of the klad multi-plan (see `docs/artifacts/multi-plans/klad/2026-07-16-klad-outline.md`). The foundation is the app shell every sub-project plugs into.
 
 ## Overview
 
-Tauri v2 desktop app, vanilla TypeScript frontend (no UI framework), CodeMirror 6 as editor core. One window, one document — classic Notepad model (no tabs; a second launch is a second process/window).
+Tauri v2 desktop app, vanilla TypeScript frontend (no UI framework), CodeMirror 6 as editor core. One window, one document - classic Notepad model (no tabs; a second launch is a second process/window).
 
 ## Decisions
 
@@ -25,7 +25,7 @@ src/main.ts        bootstrap + file flows (new/open/save/saveAs/exit/close-guard
 src/editor.ts      CM6 setup; createEditor(parent, onDocChanged, onCursor), getText, setText
 src/document.ts    DocMeta {path, encoding, eol, dirty}; newDoc, fileName, windowTitle, defaultEol
 src/fileio.ts      typed invoke() wrappers: readFile, saveFile, getStartupFile
-src/menu.ts        setupMenu(actions) — File (New/Open/Save/Save As/Exit), Edit (predefined items)
+src/menu.ts        setupMenu(actions) - File (New/Open/Save/Save As/Exit), Edit (predefined items)
 src/styles.css     layout: content row (editor + hidden #preview slot) + #statusbar placeholder
 src-tauri/src/main.rs      builder, dialog plugin, command registration, get_startup_file
 src-tauri/src/fs_cmds.rs   read_file → FileDoc{text, encoding, eol}; save_file(path, text, encoding, eol)
@@ -33,9 +33,9 @@ src-tauri/src/fs_cmds.rs   read_file → FileDoc{text, encoding, eol}; save_file
 
 Interfaces the sub-projects rely on:
 - `FileDoc { text, encoding, eol }` from `read_file`; foundation reads UTF-8 (lossy) only, detects EOL, normalizes text to LF. SP-1 swaps the detection internals; signature never changes.
-- `createEditor(parent, onDocChanged, onCursor)` — SP-1 wires `onCursor` to the status bar, SP-2 wires `onDocChanged` to the preview.
+- `createEditor(parent, onDocChanged, onCursor)` - SP-1 wires `onCursor` to the status bar, SP-2 wires `onDocChanged` to the preview.
 - `#preview` div (hidden) and `#statusbar` div exist in the layout from day one so SP-1/SP-2 don't touch `index.html` structure.
-- `setupMenu(actions)` — SPs extend the actions object and add submenus.
+- `setupMenu(actions)` - SPs extend the actions object and add submenus.
 
 ## Data flow
 
@@ -43,7 +43,7 @@ Menu action → flow fn in `main.ts` → (dialog plugin for pickers) → `fileio
 
 Close guard: `onCloseRequested` → if dirty, `preventDefault()` + `<dialog>` prompt → Save (run save flow; abort close if Save As cancelled) / Don't Save (`destroy()`) / Cancel.
 
-Startup: frontend invokes `get_startup_file` (first CLI arg if it's an existing file) and opens it — this is what file associations (SP-3) hit.
+Startup: frontend invokes `get_startup_file` (first CLI arg if it's an existing file) and opens it - this is what file associations (SP-3) hit.
 
 ## Error handling
 
@@ -53,7 +53,7 @@ Rust commands return `Result<_, String>`; frontend shows failures in a small `<d
 
 - vitest: `document.ts` pure functions (fileName across `\` and `/` paths, windowTitle dirty marker, eol default).
 - cargo test: `detect_eol`, read/save round-trip via temp file, CRLF applied on save.
-- UI wiring: manual dev-run checklist (final plan task) — this is a desktop app; no WebDriver harness (deliberate: heavy for a notepad).
+- UI wiring: manual dev-run checklist (final plan task) - this is a desktop app; no WebDriver harness (deliberate: heavy for a notepad).
 
 ## Out of scope (foundation)
 

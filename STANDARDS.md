@@ -12,7 +12,7 @@ Two layers: formal ISO/IEC/IEEE norms and industry conventions. Klad is a solo t
 
 | Standard / convention     | Applied here? | Used for |
 |---------------------------|---------------|----------|
-| ISO 10007:2017            | yes           | Configuration management — the repo is the CM system; one authoritative source per item; git history is the archive |
+| ISO 10007:2017            | yes           | Configuration management - the repo is the CM system; one authoritative source per item; git history is the archive |
 | ISO 8601                  | **yes**       | `YYYY-MM-DD` filename prefix for time-based records (specs, plans, checklists) |
 | Kebab-case ASCII paths    | **yes**       | All structural directory and filenames |
 | English structural paths  | **yes**       | Dir/file names in English; content may be Dutch where needed |
@@ -112,7 +112,7 @@ klad/
 
 ## Source vs deliverable
 
-Klad's shipped artefacts (NSIS installer, `.deb`, `.AppImage`) are produced by CI and attached to GitHub Releases — they are **not** committed to the repo. There is no in-repo generated-document split (no PDF/DOCX deliverables); the source ↔ deliverable distinction here is *source code in repo* vs *built binaries on Releases*.
+Klad's shipped artefacts (NSIS installer, `.deb`, `.AppImage`) are produced by CI and attached to GitHub Releases - they are **not** committed to the repo. There is no in-repo generated-document split (no PDF/DOCX deliverables); the source ↔ deliverable distinction here is *source code in repo* vs *built binaries on Releases*.
 
 ---
 
@@ -142,7 +142,7 @@ Historical `docs/artifacts/specs/`, `docs/artifacts/plans/`, and `docs/artifacts
 - No `temp/`, no `old/`, no `archive/` directories. Git history is the archive.
 - No secrets in tracked files (`.env`, tokens, passwords).
 - No PascalCase or spaces in authored filenames.
-- No `docs/superpowers/` or `.planning/` — specs/plans/reviews go to `docs/artifacts/`. Move, never delete, if one appears.
+- No `docs/superpowers/` or `.planning/` - specs/plans/reviews go to `docs/artifacts/`. Move, never delete, if one appears.
 
 ---
 

@@ -1,4 +1,4 @@
-# Dark Theme Toggle — Design Spec
+# Dark Theme Toggle - Design Spec
 
 - **Date:** 2026-07-18
 - **Topic:** `dark-theme`
@@ -18,18 +18,18 @@ Add a light/dark theme toggle to Klad. Binary state, surfaced as a checkbox in t
 - User can switch between light and dark theme via **View → Dark Theme** (accelerator `CmdOrCtrl+Shift+L`).
 - Choice persists across launches and is reflected in the checkbox state on load.
 - Dark mode covers every visible surface: editor (CodeMirror chrome), tab bar, status bar, preview pane (headings, code blocks, blockquotes, tables), and all dialogs (`savePrompt`, `errorBox`, `fontDialog`).
-- Light mode is preserved exactly as today — no visual regressions.
+- Light mode is preserved exactly as today - no visual regressions.
 
 ### Non-goals (YAGNI)
 - No `"system"` / OS-following mode. (Binary `light | dark` only. Settings shape allows adding `"system"` later without a migration.)
 - No status-bar theme indicator.
 - No accent-color picker or theme variants.
-- No CodeMirror `EditorView.theme()` extension or `@codemirror/theme-one-dark` dependency. There is no syntax highlighting in the editor today (no `@codemirror/lang-*`), so CM theming is just chrome — handled by CSS overrides.
+- No CodeMirror `EditorView.theme()` extension or `@codemirror/theme-one-dark` dependency. There is no syntax highlighting in the editor today (no `@codemirror/lang-*`), so CM theming is just chrome - handled by CSS overrides.
 - No per-token syntax colors.
 
 ## 3. Approach chosen
 
-**Approach A — CSS variables + `data-theme` attribute on `<html>`.**
+**Approach A - CSS variables + `data-theme` attribute on `<html>`.**
 
 Design tokens live in `styles.css` as CSS custom properties. A single `data-theme` attribute on `document.documentElement` selects light (default) or dark (overridden) values. `applyTheme()` in `main.ts` sets that one attribute; the CSS cascade does the rest, including for CodeMirror chrome (via `[data-theme="dark"] .cm-*` selectors that outrank CodeMirror's default stylesheet by specificity) and for the preview pane (which already inherits from `styles.css`).
 
@@ -47,7 +47,7 @@ loadSettings() ──┬──> applyTheme() ──> <html data-theme="…"> ─
                  └──> setupMenu(actions, settings.wrap, settings.theme === "dark")
                                               │
                                               └──> themeItem constructed with `checked: <initial>`
-                                                   (same pattern as wrapItem — no post-construction setChecked)
+                                                   (same pattern as wrapItem - no post-construction setChecked)
 
 User clicks View → Dark Theme ──> action: toggleTheme(await themeItem.isChecked())
    ├── settings.theme = on ? "dark" : "light"
@@ -57,7 +57,7 @@ User clicks View → Dark Theme ──> action: toggleTheme(await themeItem.isCh
 
 - **Default at first run:** `"light"` (no surprise, matches current behavior).
 - **Persisted choice** is restored on launch via two paths: the `data-theme` attribute (driven by `applyTheme`) and the menu checkbox (driven by the `initialThemeDark` arg to `setupMenu`, mirroring how `wrapItem` already works at `menu.ts:38,75`).
-- The menu checkbox is auto-flipped by Tauri before the action fires — same `// ponytail: relies on Tauri flipping CheckMenuItem state before invoking the action` note as `previewItem`. The user-click path reads the new checked state via the closure; **no manual `setChecked` is ever needed** because there is no code path that flips the theme without going through the menu.
+- The menu checkbox is auto-flipped by Tauri before the action fires - same `// ponytail: relies on Tauri flipping CheckMenuItem state before invoking the action` note as `previewItem`. The user-click path reads the new checked state via the closure; **no manual `setChecked` is ever needed** because there is no code path that flips the theme without going through the menu.
 
 ## 5. CSS variable contract
 
@@ -78,7 +78,7 @@ Nine semantic variables under `:root` (light = current values), overridden under
 **Notes:**
 - The standalone dialog border `#bbb` collapses into `--border` (small visual shift; preferable to a 10th variable).
 - Existing `--editor-font-family` and `--editor-font-size` (set imperatively by `applyEditorStyle`) are untouched.
-- No new selectors in light mode — every existing rule keeps its selector, only the value changes from literal to `var(--…)`.
+- No new selectors in light mode - every existing rule keeps its selector, only the value changes from literal to `var(--…)`.
 
 ### CodeMirror-specific overrides (dark only)
 
@@ -120,7 +120,7 @@ Five files changed, no new files.
   });
   ```
 - Insert `themeItem` into the **View** menu items, immediately before `previewItem`.
-- **Do NOT add `themeItem` to `MenuHandles`.** No consumer needs it: initial state is set at construction time via `initialThemeDark`, and the user-click path auto-syncs via Tauri. (Ponytail: `wrapItem` is currently in `MenuHandles` but unused from `main.ts` — we don't extend that smell.)
+- **Do NOT add `themeItem` to `MenuHandles`.** No consumer needs it: initial state is set at construction time via `initialThemeDark`, and the user-click path auto-syncs via Tauri. (Ponytail: `wrapItem` is currently in `MenuHandles` but unused from `main.ts` - we don't extend that smell.)
 
 ### `src/main.ts`
 - Add `applyTheme()` as a sibling of `applyEditorStyle()` (line 69):
@@ -161,12 +161,12 @@ Five files changed, no new files.
 
 | Catalog | Affected? |
 |---|---|
-| `src-tauri/src/main.rs` `invoke_handler![...]` | **No** — theme is frontend-only, no new Tauri command. |
-| `src/fileio.ts` | **No** — no new `invoke()` wrapper. |
+| `src-tauri/src/main.rs` `invoke_handler![...]` | **No** - theme is frontend-only, no new Tauri command. |
+| `src/fileio.ts` | **No** - no new `invoke()` wrapper. |
 | `src-tauri/tauri.conf.json` `bundle.fileAssociations` | **No**. |
-| `src-tauri/capabilities/default.json` | **No** — no new permission. |
-| `package.json` / `src-tauri/Cargo.toml` deps | **No** — zero new dependencies. |
-| `index.html` dialog markup | **No** — `data-theme` set imperatively from JS. |
+| `src-tauri/capabilities/default.json` | **No** - no new permission. |
+| `package.json` / `src-tauri/Cargo.toml` deps | **No** - zero new dependencies. |
+| `index.html` dialog markup | **No** - `data-theme` set imperatively from JS. |
 
 ## 8. Testing strategy
 
@@ -175,7 +175,7 @@ Extend `src/__tests__/settings.test.ts` per Section 6. Covers the settings-shape
 
 Run: `npm run test`.
 
-### Manual visual checklist (no framework — ponytail-style)
+### Manual visual checklist (no framework - ponytail-style)
 Toggle to dark, then verify each surface:
 
 - [ ] Editor surface: background, text, cursor color, gutter.
@@ -183,12 +183,12 @@ Toggle to dark, then verify each surface:
 - [ ] Status bar: text color, dropdown chevrons legible.
 - [ ] Preview pane: body text, `h1`/`h2` underline, inline `code` background, `pre` block background, `blockquote` text, table borders.
 - [ ] Search panel (`Ctrl+F`): background, text, input field.
-- [ ] Dialogs: open Save Prompt (`<dialog id="savePrompt">`), Error (`<dialog id="errorBox">`), Font (`<dialog id="fontDialog">`) — verify backgrounds, borders, text.
+- [ ] Dialogs: open Save Prompt (`<dialog id="savePrompt">`), Error (`<dialog id="errorBox">`), Font (`<dialog id="fontDialog">`) - verify backgrounds, borders, text.
 
 Then toggle back to light and verify no stray dark artifacts remain on any surface. Then reload the window (`Ctrl+R` / `CmdOrCtrl+R`) and verify the persisted theme is restored and the View-menu checkbox matches.
 
 ### Backend tests
-`cargo test` is unaffected — no Rust changes. Skipping it for this work is correct; the AGENTS.md "run both" rule applies when both halves change.
+`cargo test` is unaffected - no Rust changes. Skipping it for this work is correct; the AGENTS.md "run both" rule applies when both halves change.
 
 ## 9. Risks & mitigations
 
@@ -197,7 +197,7 @@ Then toggle back to light and verify no stray dark artifacts remain on any surfa
 | CodeMirror's default light styles win over our `[data-theme="dark"]` overrides. | Override rules use `[data-theme="dark"] .cm-editor` (specificity 0,2,0) which outranks CM's default `.cm-editor` (0,1,0). Verified by the manual visual checklist item for editor surface. |
 | A hex literal is missed during the styles.css refactor and stays light in dark mode. | The manual checklist walks every surface; also grep `styles.css` for any remaining `#[0-9a-fA-F]{3,6}` after refactor. |
 | `parseSettings` accepts a `theme` value that is a valid string but not `"light"`/`"dark"` (e.g. `"purple"`), causing `[data-theme="purple"]` to match neither block → unstyled page. | Parser strictly narrows to the two allowed values; anything else falls back to `DEFAULT_SETTINGS.theme`. Covered by automated test. |
-| Menu checkbox and `data-theme` attribute drift out of sync. | Cannot happen in this design. Both are set from the same source (`settings.theme`) at startup — checkbox via the `initialThemeDark` arg to `setupMenu`, attribute via `applyTheme()`. The user-click path is the only mutation point and updates `settings.theme` first, then both dependents. |
+| Menu checkbox and `data-theme` attribute drift out of sync. | Cannot happen in this design. Both are set from the same source (`settings.theme`) at startup - checkbox via the `initialThemeDark` arg to `setupMenu`, attribute via `applyTheme()`. The user-click path is the only mutation point and updates `settings.theme` first, then both dependents. |
 
 ## 10. Out-of-scope follow-ups (not built now)
 

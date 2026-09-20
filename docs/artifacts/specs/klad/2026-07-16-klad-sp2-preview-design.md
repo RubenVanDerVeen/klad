@@ -1,4 +1,4 @@
-# Klad SP-2: Markdown Live Split Preview — Design
+# Klad SP-2: Markdown Live Split Preview - Design
 
 Part of the klad multi-plan. Depends on the merged foundation (`feat/klad`). For `.md` files: source left, rendered right, updates while typing.
 
@@ -11,19 +11,19 @@ Part of the klad multi-plan. Depends on the merged foundation (`feat/klad`). For
 | Toggle | View → Markdown Preview (CheckMenuItem, Ctrl+Shift+M); auto-ON when opening/saving-as `.md`/`.markdown`, auto-OFF leaving them | Matches "it's a notepad that understands md", still user-overridable |
 | Scroll sync | Proportional (editor scroll % → preview scrollTop %) | ponytail: naive proportional sync; upgrade to heading-anchor mapping if drift annoys |
 | Styling | Small GitHub-lite CSS in the existing stylesheet, light theme | Matches app; theming is out of scope |
-| Source highlighting | None (`@codemirror/lang-markdown` skipped) | YAGNI — preview is the requirement, add later if wanted |
+| Source highlighting | None (`@codemirror/lang-markdown` skipped) | YAGNI - preview is the requirement, add later if wanted |
 
 ## Components (touches)
 
 ```
-src/render.ts    NEW — renderMarkdown(text): string  (marked + DOMPurify, pure, testable)
-src/preview.ts   NEW — show()/hide()/toggle()/isVisible()/update(text) over the foundation's #preview div; owns debounce + scroll sync
+src/render.ts    NEW - renderMarkdown(text): string  (marked + DOMPurify, pure, testable)
+src/preview.ts   NEW - show()/hide()/toggle()/isVisible()/update(text) over the foundation's #preview div; owns debounce + scroll sync
 src/menu.ts      + View → Markdown Preview CheckMenuItem (kept in sync with auto-toggle)
 src/main.ts      wiring: onDocChanged→preview.update; open/new/saveAs→auto toggle by extension
 src/styles.css   preview typography (headings, code blocks, tables, task-list checkboxes, blockquotes, images max-width:100%)
 ```
 
-Only reads document text through existing hooks — no document-model or Rust changes.
+Only reads document text through existing hooks - no document-model or Rust changes.
 
 ## Error handling
 

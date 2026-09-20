@@ -1,4 +1,4 @@
-# SP-1 verification — 2026-07-16
+# SP-1 verification - 2026-07-16
 
 Headless dev environment (Windows, no Tauri WebView). Items marked PASS were
 executed in this environment; items requiring GUI interaction are DEFERRED
@@ -30,7 +30,7 @@ with a note.
       and `utf16_be_roundtrip` / `saves_windows_1252_label` exercise the `save_file` LF pass-through (`text` written verbatim).
       Note: No single cargo test asserts the full CRLF-on-disk → LF-on-disk cycle; the GUI dropdown interaction is the real verification.
 
-## GUI / manual (DEFERRED — needs `npm run tauri dev` on a GUI host)
+## GUI / manual (DEFERRED - needs `npm run tauri dev` on a GUI host)
 
 - [ ] Ctrl+F find with match highlighting; F3 next
 - [ ] Ctrl+H replace one and replace-all work

@@ -13,12 +13,12 @@
 ## Global Constraints
 
 - Branch: `feat/klad-sp1-editor`, created from the merged `feat/klad`. (Deviation from the manifest-template naming `feat/klad/sp-1-...`: git forbids a branch named `feat/klad/...` while `feat/klad` exists.)
-- Do NOT change the signatures of `read_file` / `save_file` / `get_startup_file`, `DocMeta` fields, or `createEditor(parent, onDocChanged, onCursor)` — other sub-projects compile against them.
+- Do NOT change the signatures of `read_file` / `save_file` / `get_startup_file`, `DocMeta` fields, or `createEditor(parent, onDocChanged, onCursor)` - other sub-projects compile against them.
 - Encoding labels shown in the dropdown, exact strings: `UTF-8`, `UTF-8 BOM`, `UTF-16 LE`, `UTF-16 BE`, `Windows-1252`. Detection may report other legacy names (e.g. `windows-1251`); the status bar then shows that name as an extra option. Saving an unknown label encodes via `encoding_rs::Encoding::for_label`, falling back to windows-1252.
 - Editor text stays LF-normalized in memory (foundation rule).
 - Tests: `npm test` (vitest, pure logic only), `cargo test` in `src-tauri/`. UI wiring → final manual checklist.
 - Commit after every task.
-- `menu.ts` and `styles.css` are also touched by SP-2 — expected merge-conflict files, keep your changes minimal and additive.
+- `menu.ts` and `styles.css` are also touched by SP-2 - expected merge-conflict files, keep your changes minimal and additive.
 - Permission errors in devtools console → add the named permission to `src-tauri/capabilities/default.json`.
 
 ---
@@ -147,7 +147,7 @@ Append inside `mod tests` in `src-tauri/src/fs_cmds.rs`:
 ```
 
 Run: `cd src-tauri` then `cargo test`
-Expected: FAIL — new tests fail (detection/encoding not implemented); foundation tests still pass.
+Expected: FAIL - new tests fail (detection/encoding not implemented); foundation tests still pass.
 
 - [ ] **Step 3: Replace `decode` and `encode` in `src-tauri/src/fs_cmds.rs`**
 
@@ -274,7 +274,7 @@ describe("settings", () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npm test`
-Expected: FAIL — cannot resolve `../settings`.
+Expected: FAIL - cannot resolve `../settings`.
 
 - [ ] **Step 3: Implement `src/settings.ts`**
 
@@ -578,7 +578,7 @@ const menuHandles = await setupMenu(
 );
 ```
 
-`main.ts` is not a module with top-level await by default under Vite? It is (ES2022 target) — if `tsc` complains, wrap the setup in an `async function init()` called with `void init()`. Add a placeholder `function openFontDialog(): void {}` (implemented in Task 5).
+`main.ts` is not a module with top-level await by default under Vite? It is (ES2022 target) - if `tsc` complains, wrap the setup in an `async function init()` called with `void init()`. Add a placeholder `function openFontDialog(): void {}` (implemented in Task 5).
 
 Add Ctrl+wheel zoom (after editor creation):
 ```ts
@@ -606,7 +606,7 @@ Add to `src/styles.css` (search panel fit):
   font-size: 12px;
 }
 ```
-And make the editor honor the font family var — change the `#editor .cm-scroller` rule to:
+And make the editor honor the font family var - change the `#editor .cm-scroller` rule to:
 ```css
 #editor .cm-scroller {
   font-family: var(--editor-font-family, Consolas), "Courier New", monospace;
@@ -616,7 +616,7 @@ And make the editor honor the font family var — change the `#editor .cm-scroll
 
 - [ ] **Step 5: Verify**
 
-Run: `npx tsc --noEmit` then `npm test` — clean/green.
+Run: `npx tsc --noEmit` then `npm test` - clean/green.
 Run: `npm run tauri dev` and check: Ctrl+F opens search panel (top), Ctrl+H shows the panel with replace row, Ctrl+G prompts for a line, View → Word Wrap toggles wrapping on a long line and the checkmark follows, Ctrl+= / Ctrl+- / Ctrl+0 and Ctrl+wheel zoom the editor, File → Print… opens the print dialog.
 
 - [ ] **Step 6: Commit**
@@ -738,7 +738,7 @@ setEol(meta.eol);
 
 Run: `npm run tauri dev` and check: cursor moves update `Ln, Col`; opening a CRLF file shows `Windows (CRLF)`; switching encoding to `UTF-16 LE` marks the title dirty; saving and reopening the file shows `UTF-16 LE` again (bytes really changed); zoom % follows Ctrl+wheel.
 
-Run: `npx tsc --noEmit` && `npm test` — clean/green.
+Run: `npx tsc --noEmit` && `npm test` - clean/green.
 
 - [ ] **Step 4: Commit**
 
@@ -830,7 +830,7 @@ git commit -m "feat: font dialog, settings persist across restarts"
 
 Create the file with each line marked PASS/FAIL after actually doing it:
 ```markdown
-# SP-1 verification — YYYY-MM-DD
+# SP-1 verification - YYYY-MM-DD
 
 - [ ] `npm test`, `cargo test` (src-tauri/), `npx tsc --noEmit` all green
 - [ ] Ctrl+F find with match highlighting; F3 next
@@ -858,5 +858,5 @@ git commit -m "test: sp-1 verification checklist results"
 ## Self-review notes (already applied)
 
 - Spec coverage: encodings (T1), settings (T2), search/wrap/zoom/menu/print (T3), status bar (T4), font (T5), checklist (T6). Recents dropped per spec.
-- Deviation from spec recorded: legacy detection reports `enc.name()` (e.g. `windows-1252`) instead of forcing everything to the literal `Windows-1252` — saving still accepts any label via `for_label`, so a windows-1251 file is not silently transcoded. Status bar handles unknown labels by adding an option.
+- Deviation from spec recorded: legacy detection reports `enc.name()` (e.g. `windows-1252`) instead of forcing everything to the literal `Windows-1252` - saving still accepts any label via `for_label`, so a windows-1251 file is not silently transcoded. Status bar handles unknown labels by adding an option.
 - Type consistency: `MenuActions`/`MenuHandles`/`setupMenu(actions, initialWrap)` match between Task 3 and 4; `createEditor` 4th param defaulted so SP-2 (which doesn't pass it) still compiles.

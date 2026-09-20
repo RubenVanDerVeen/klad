@@ -1,4 +1,4 @@
-# Typst Single-File Live Preview — Design
+# Typst Single-File Live Preview - Design
 
 - **Date:** 2026-08-10
 - **Topic:** `typst`
@@ -16,7 +16,7 @@ User intent (verbatim):
 
 Clarified through brainstorming (2026-08-10, four forks resolved):
 
-1. **Scope of v1:** *Single-file preview now; folder/project mode as a follow-up plan.* The "open a typst folder" part — file tree, multi-buffer, `#include`/`#import` resolution, `@preview` packages, system fonts — is roughly 80% of a typst.app clone and is **out of scope** for this spec. v1 ships the renderer against a single buffer to prove the compile loop earns the rest.
+1. **Scope of v1:** *Single-file preview now; folder/project mode as a follow-up plan.* The "open a typst folder" part - file tree, multi-buffer, `#include`/`#import` resolution, `@preview` packages, system fonts - is roughly 80% of a typst.app clone and is **out of scope** for this spec. v1 ships the renderer against a single buffer to prove the compile loop earns the rest.
 2. **Compiler location:** *Rust crate in Tauri backend.* The `typst` crate runs natively alongside the existing `src-tauri` Rust; no WASM blob in the webview (keeps the frontend thin per AGENTS.md; no new frontend dep).
 3. **PDF export:** *Preview-only.* The compile pipeline could emit PDF (~20-30 LOC on top via `typst-pdf`), but v1 ships just SVG-in-pane. Export defers to a later slice.
 4. **Live update:** Same debounced-on-keystroke model as Markdown today, at a longer debounce (400ms vs 150ms) because typst compile is heavier than `marked()`.
@@ -30,13 +30,13 @@ Markdown preview today is 15 lines (`src/render.ts`: `marked.parse` + `DOMPurify
 | Concern | Markdown today | Typst v1 (this spec) |
 |---|---|---|
 | Render call | `marked.parse(text)` sync in JS | `typst::compile(&world)` in Rust via Tauri IPC, async on the frontend |
-| World / inputs | none — pure function of text | a `World` trait impl providing source, fonts, library, file/id resolution |
+| World / inputs | none - pure function of text | a `World` trait impl providing source, fonts, library, file/id resolution |
 | Output | HTML string → `innerHTML` | per-page SVG strings → stacked in the pane |
 | Fonts | browser fonts | embedded `typst-assets::fonts()` only (no system fonts in v1) |
 | Cost on keystroke | ~ms | ~10-50ms for small docs, hundreds of ms for big ones; needs debounce + a render-token race guard |
 | File lookups | n/a | `#include`/`#import`/packages **return errors in v1** (no fs resolver; surface as compile errors) |
 
-The renderer is doable in one focused pass. The folder/project model is a separate spec — explicitly deferred (§9).
+The renderer is doable in one focused pass. The folder/project model is a separate spec - explicitly deferred (§9).
 
 ## 3. Architecture
 
@@ -51,15 +51,15 @@ compile_typst(text: String) -> TypstResult
 ```
 
 - Pages are SVG strings (one per typst page). Frontend stacks them vertically.
-- Errors carry the diagnostic message + the line number in the source if typst attaches one. **No `codespan-reporting`** — ponytail: format the message + line manually from `SourceDiagnostic`, the banner only needs "line N: message". Prettier formatting defers to folder mode.
+- Errors carry the diagnostic message + the line number in the source if typst attaches one. **No `codespan-reporting`** - ponytail: format the message + line manually from `SourceDiagnostic`, the banner only needs "line N: message". Prettier formatting defers to folder mode.
 - On compile failure: `pages: []`, `errors: <non-empty>`. The frontend keeps the last-good render and shows the error banner (§3.2). We do **not** ask typst for partial output on error in v1; last-good + banner is the whole UX.
 
 **`SingleFileWorld`** (implements `typst::World`):
 
-- `source` (root): a `typst::syntax::Source` built from `text` (LF-normalized — klad's editor buffer is already LF, AGENTS.md).
-- `book` / `font`: backed by `typst-assets::fonts()` — embedded at compile time, no fs scan.
+- `source` (root): a `typst::syntax::Source` built from `text` (LF-normalized - klad's editor buffer is already LF, AGENTS.md).
+- `book` / `font`: backed by `typst-assets::fonts()` - embedded at compile time, no fs scan.
 - `file(id)` / `resolve(path)` / `package(spec)`: any non-root file/package lookup in v1 returns an error. This makes `#include "other.typ"`, `#import "foo.typ"`, and `@preview/...` all surface as clean typst compile errors (e.g. "file not found: other.typ"), which we forward to the banner. **This is the contract that bounds v1 to single-file.**
-- `today`: delegates to `chrono`/`time` (typst's transitive dep) or a stub returning the system date — verify against the pinned version's `World::today` signature.
+- `today`: delegates to `chrono`/`time` (typst's transitive dep) or a stub returning the system date - verify against the pinned version's `World::today` signature.
 
 ### 3.2 Frontend (extend `src/preview.ts`, no new module)
 
@@ -67,16 +67,16 @@ compile_typst(text: String) -> TypstResult
 
 - New module-level state: `previewKind: 'md' | 'typ'`. Set by a new exported `setPreviewKind(kind)` that `applyPreviewMode()` in `main.ts` calls alongside `setPreviewVisible`.
 - `renderPreviewNow(text)` branches on `previewKind`:
-  - `'md'` (unchanged): `pane().innerHTML = renderMarkdown(text)` — sync, as today.
+  - `'md'` (unchanged): `pane().innerHTML = renderMarkdown(text)` - sync, as today.
   - `'typ'`: kicks off `compileTypst(text)` (async invoke), then **race-guarded** by a monotonic token: capture `++renderToken` before the await; on resolve, only apply if `token === renderToken`. Stale compiles (user typed more) drop silently. On success, stack per-page SVGs in the pane; on error, leave the last-good pane contents in place and show the banner.
-- `updatePreview = debounce(renderPreviewNow, ...)`: split into two debounce instances — 150ms for md (unchanged), 400ms for typ. Dispatch picks based on `previewKind`. (Two short-lived timers, one per kind; ponytail: not a registry.)
-- **Error banner**: lazily created `<div id="preview-error">` attached once to the pane's parent, shown when `errors.length > 0`, hidden when a compile succeeds. Holds the first error's `line: message`. Built from TS — no `index.html` markup change (AGENTS.md: `<dialog>` and direct DOM).
+- `updatePreview = debounce(renderPreviewNow, ...)`: split into two debounce instances - 150ms for md (unchanged), 400ms for typ. Dispatch picks based on `previewKind`. (Two short-lived timers, one per kind; ponytail: not a registry.)
+- **Error banner**: lazily created `<div id="preview-error">` attached once to the pane's parent, shown when `errors.length > 0`, hidden when a compile succeeds. Holds the first error's `line: message`. Built from TS - no `index.html` markup change (AGENTS.md: `<dialog>` and direct DOM).
 - **Pane flash on first open**: when `applyPreviewMode` shows the pane for a `.typ` file, the pane is briefly empty until the first compile resolves (~tens of ms). Acceptable; not worth a placeholder.
 
 ### 3.3 File-type detection & association
 
 - `src/main.ts:177` `isMarkdown(m)` stays; add `isTypst(m) = /\.(typ|typst)$/i.test(m.path ?? "")`. `applyPreviewMode` computes which kind applies and calls `setPreviewKind` + `setPreviewVisible` accordingly. If both predicates miss, preview hides (current behavior for non-md files).
-- The menu "Preview" checkbox (`menuHandles?.previewItem.setChecked(on)`) stays in sync with whatever kind is active. The checkbox label does not change in v1 — it says "Preview", the kind is implicit in the file type.
+- The menu "Preview" checkbox (`menuHandles?.previewItem.setChecked(on)`) stays in sync with whatever kind is active. The checkbox label does not change in v1 - it says "Preview", the kind is implicit in the file type.
 - **Tab switch / Save As path change**: `applyPreviewMode` already runs on tab switch and after Save As (`main.ts:205, 219, 282, 346`). Because `previewKind` is derived from the active tab's `meta.path`, switching to a tab of a different kind flips the renderer automatically.
 - Open-file filters (`main.ts:34` `FILTERS`): add `typ` and `typst` to the "Text files" extensions list so the Open dialog shows them.
 - `tauri.conf.json` `bundle.fileAssociations`: add `{ ext: ["typ", "typst"], name: "Typst Document", description: "Typst Document", mimeType: "text/x-typst", role: "Editor" }`. Lets the OS double-click `.typ` files into klad on Windows + Linux.
@@ -184,7 +184,7 @@ Run: `cargo test --manifest-path src-tauri/Cargo.toml`. Expected: all existing f
 
 Per project convention (tabs spec §12: pure-logic tests only, no Tauri IPC mocking, no CodeMirror mocking):
 
-- **Race guard test** (the critical one): extract the token-guard logic into a tiny pure helper if it makes the test clean (e.g. `pickLatest<T>(token, latestRef, value)`) OR test the dispatch by injecting a stubbed `compileTypst` that resolves in a controlled order. Verify: a slow in-flight compile that resolves *after* a newer compile does **not** overwrite the newer render's output. This is the only piece of new logic that can fail silently — it must have a runnable check.
+- **Race guard test** (the critical one): extract the token-guard logic into a tiny pure helper if it makes the test clean (e.g. `pickLatest<T>(token, latestRef, value)`) OR test the dispatch by injecting a stubbed `compileTypst` that resolves in a controlled order. Verify: a slow in-flight compile that resolves *after* a newer compile does **not** overwrite the newer render's output. This is the only piece of new logic that can fail silently - it must have a runnable check.
 - **Kind-dispatch test**: a pure predicate `previewKindForPath(path)` (extracted from the `isTypst`/`isMarkdown` derivation) returns `"md" | "typ" | null`. Cover all three branches + case-insensitivity.
 - **Path predicate test**: `isTypst("foo.TYP")`, `isTypst("foo.typst")`, `isTypst("foo.txt")` (negative).
 
@@ -198,7 +198,7 @@ Build once: `cargo build --manifest-path src-tauri/Cargo.toml` then `npm run tau
 1. **Open `.typ` → renders:** Create `test.typ` containing `#set page(width: 200pt)\nHello #emph[typst]`. Open in klad. Preview pane shows 1 SVG page with rendered text + italic. No banner.
 2. **Live keystroke:** Append `\n= Heading`. Within ~400ms the preview updates to show the heading. No flicker from stale renders when typing fast.
 3. **Compile error → banner, last-good stays:** Replace contents with `#set page(width: )`. Within ~400ms the **last good render stays on screen** and a red banner appears with "line N: ...". Fix the source; banner disappears, fresh render replaces last-good.
-4. **v1 boundary — `#include` is a clean error:** `#include "other.typ"` → banner mentions the missing file. **No crash, no panic.**
+4. **v1 boundary - `#include` is a clean error:** `#include "other.typ"` → banner mentions the missing file. **No crash, no panic.**
 5. **Tab switch md ↔ typ:** Open `a.md` and `b.typ`. Switch tabs; pane re-renders with the right kind each direction. No stale cross-kind content.
 6. **Tab switch typ → txt:** Open `c.txt`. Preview hides. Switch back to `b.typ`; preview re-shows and re-renders.
 7. **Open dialog filter:** `Ctrl+O` → "Text files" filter shows `typ` and `typst` extensions.

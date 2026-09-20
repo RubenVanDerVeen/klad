@@ -4,7 +4,7 @@
 
 **Goal:** Windows NSIS installer with file associations (.txt .md .markdown .log .ini .cfg), Linux .deb + AppImage with MIME registration, app icon, CI release workflow, install docs.
 
-**Architecture:** Everything through `tauri-bundler` config in `tauri.conf.json` — no runtime code. Icon generated from an SVG via a one-off sharp script + `tauri icon`. GitHub Actions (`tauri-action`) builds both platforms on version tags; local verification is Windows-only (dev box), Linux artifacts verified via CI once the repo has a remote.
+**Architecture:** Everything through `tauri-bundler` config in `tauri.conf.json` - no runtime code. Icon generated from an SVG via a one-off sharp script + `tauri icon`. GitHub Actions (`tauri-action`) builds both platforms on version tags; local verification is Windows-only (dev box), Linux artifacts verified via CI once the repo has a remote.
 
 **Tech Stack:** tauri-bundler (already in `@tauri-apps/cli`), `sharp` (devDependency, icon generation only), `tauri-apps/tauri-action` (CI).
 
@@ -13,12 +13,12 @@
 ## Global Constraints
 
 - Branch: `feat/klad-sp3-packaging`, created from the merged `feat/klad`. (Deviation from the manifest-template naming `feat/klad/sp-3-...`: git forbids `feat/klad/...` while branch `feat/klad` exists.)
-- No changes to `src/` or `src-tauri/src/` — config, resources, docs, CI only.
+- No changes to `src/` or `src-tauri/src/` - config, resources, docs, CI only.
 - Identifier stays `dev.ruben.klad`; product name stays `Klad`.
 - Associated extensions, exact list: `txt`, `md`, `markdown`, `log`, `ini`, `cfg`.
 - NSIS `installMode: "currentUser"` (no admin prompt).
 - Commit after every task.
-- `npm run tauri build` needs the NSIS toolchain; the Tauri CLI downloads it automatically on first Windows bundle — allow that.
+- `npm run tauri build` needs the NSIS toolchain; the Tauri CLI downloads it automatically on first Windows bundle - allow that.
 
 ---
 
@@ -63,7 +63,7 @@ Run: `npm install -D sharp`
 Run: `node scripts/make-icon.mjs`
 Expected: `app-icon.png ok (1024x1024)`.
 
-Open `app-icon.png` and confirm the white "K" on blue actually rendered (SVG text needs a rasterizer with font support; if the "K" is missing, replace the `<text>` element with an outlined path — e.g. regenerate the SVG with the letter converted to a `<path>` — and rerun).
+Open `app-icon.png` and confirm the white "K" on blue actually rendered (SVG text needs a rasterizer with font support; if the "K" is missing, replace the `<text>` element with an outlined path - e.g. regenerate the SVG with the letter converted to a `<path>` - and rerun).
 
 Run: `npm run tauri icon app-icon.png`
 Expected: files written to `src-tauri/icons/` including `icon.ico` and `icon.icns`.
@@ -125,7 +125,7 @@ git commit -m "feat: app icon and generation script"
 Run: `npm run tauri build -- --no-bundle` (config is parsed; app compiles release)
 Expected: completes without config schema errors. (Full bundle comes in Task 5.)
 
-If the schema rejects a key, check `https://schema.tauri.app/config/2` for the installed CLI version and fix the key — do not delete the association entries.
+If the schema rejects a key, check `https://schema.tauri.app/config/2` for the installed CLI version and fix the key - do not delete the association entries.
 
 - [ ] **Step 3: Commit**
 
@@ -148,7 +148,7 @@ git commit -m "feat: bundle config with file associations for txt/md/log/ini/cfg
 
 - [ ] **Step 1: Determine whether tauri-bundler emits MimeType from fileAssociations**
 
-On this Windows box the deb bundler doesn't run, so check the source of truth: in the installed CLI's bundler (search `node_modules/@tauri-apps/cli` is a binary — instead check the Tauri docs/source on the web for the installed version: does the generated `.desktop` include `MimeType` derived from `bundle.fileAssociations[].mimeType`?).
+On this Windows box the deb bundler doesn't run, so check the source of truth: in the installed CLI's bundler (search `node_modules/@tauri-apps/cli` is a binary - instead check the Tauri docs/source on the web for the installed version: does the generated `.desktop` include `MimeType` derived from `bundle.fileAssociations[].mimeType`?).
 
 If YES: record that in the commit message and skip Step 2.
 
@@ -179,7 +179,7 @@ Add to the `linux` section of the bundle config:
   "appimage": {}
 }
 ```
-(If the schema of the installed CLI exposes `desktopTemplate` under a different path — e.g. directly under `linux` — follow the schema; the requirement is only that the template is used for the generated `.desktop`.)
+(If the schema of the installed CLI exposes `desktopTemplate` under a different path - e.g. directly under `linux` - follow the schema; the requirement is only that the template is used for the generated `.desktop`.)
 
 - [ ] **Step 3: Commit**
 
@@ -241,7 +241,7 @@ jobs:
           releaseDraft: true
 ```
 
-Note: `npm ci` requires `package-lock.json` in the repo — the foundation committed it; verify with `git ls-files package-lock.json` (must print the filename).
+Note: `npm ci` requires `package-lock.json` in the repo - the foundation committed it; verify with `git ls-files package-lock.json` (must print the filename).
 
 - [ ] **Step 2: Create `README.md`**
 
@@ -306,13 +306,13 @@ git commit -m "feat: CI release workflow and README"
 - [ ] **Step 1: Build**
 
 Run: `npm run tauri build`
-Expected: NSIS installer at `src-tauri/target/release/bundle/nsis/Klad_0.1.0_x64-setup.exe`. (deb/appimage targets are skipped on Windows — expected.)
+Expected: NSIS installer at `src-tauri/target/release/bundle/nsis/Klad_0.1.0_x64-setup.exe`. (deb/appimage targets are skipped on Windows - expected.)
 
 - [ ] **Step 2: Install and verify, recording results**
 
 Create `docs/artifacts/verification/klad-sp3-checklist.md`:
 ```markdown
-# SP-3 verification — YYYY-MM-DD (Windows local)
+# SP-3 verification - YYYY-MM-DD (Windows local)
 
 - [ ] Installer runs without admin prompt (currentUser mode)
 - [ ] Start menu shows Klad with the blue K icon
@@ -328,7 +328,7 @@ Create `docs/artifacts/verification/klad-sp3-checklist.md`:
 - [ ] xdg-mime default commands from README work; xdg-open a .txt opens Klad
 ```
 
-Mark the Windows lines PASS/FAIL by actually doing them. Leave the Linux lines unchecked with the note — they run on CI after the repo gets a GitHub remote, or on any Linux machine.
+Mark the Windows lines PASS/FAIL by actually doing them. Leave the Linux lines unchecked with the note - they run on CI after the repo gets a GitHub remote, or on any Linux machine.
 
 - [ ] **Step 3: Commit**
 

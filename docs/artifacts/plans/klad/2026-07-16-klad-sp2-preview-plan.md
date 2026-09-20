@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `.md` files get a live split view — source left, sanitized rendered Markdown right, debounced updates while typing, proportional scroll sync, View-menu/Ctrl+Shift+M toggle.
+**Goal:** `.md` files get a live split view - source left, sanitized rendered Markdown right, debounced updates while typing, proportional scroll sync, View-menu/Ctrl+Shift+M toggle.
 
 **Architecture:** `render.ts` is a pure `text → sanitized html` function (marked + DOMPurify). `preview.ts` owns the foundation's `#preview` div: visibility, debounced updates, scroll sync. `main.ts` wires the existing `onDocChanged` hook and auto-toggles by file extension.
 
@@ -17,7 +17,7 @@
 - Preview must never execute content from the file: everything through `DOMPurify.sanitize`.
 - Tests: `npm test`. DOM-dependent test files carry a `// @vitest-environment jsdom` pragma; everything else stays in node env.
 - Commit after every task.
-- `menu.ts`, `main.ts`, `styles.css` are also touched by SP-1 — expected merge-conflict files; keep changes minimal and additive. If SP-1 merged first and `setupMenu` already returns `MenuHandles` with a View submenu, ADD the preview item to that submenu and extend `MenuHandles` with `previewItem`; the code below shows the standalone (foundation-only) variant plus the merged variant.
+- `menu.ts`, `main.ts`, `styles.css` are also touched by SP-1 - expected merge-conflict files; keep changes minimal and additive. If SP-1 merged first and `setupMenu` already returns `MenuHandles` with a View submenu, ADD the preview item to that submenu and extend `MenuHandles` with `previewItem`; the code below shows the standalone (foundation-only) variant plus the merged variant.
 
 ---
 
@@ -30,7 +30,7 @@
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `renderMarkdown(text: string): string` — GFM markdown in, sanitized HTML string out; never throws.
+- Produces: `renderMarkdown(text: string): string` - GFM markdown in, sanitized HTML string out; never throws.
 
 - [ ] **Step 1: Install dependencies**
 
@@ -85,7 +85,7 @@ describe("renderMarkdown", () => {
 - [ ] **Step 3: Run tests to verify they fail**
 
 Run: `npm test`
-Expected: FAIL — cannot resolve `../render`.
+Expected: FAIL - cannot resolve `../render`.
 
 - [ ] **Step 4: Implement `src/render.ts`**
 
@@ -159,7 +159,7 @@ describe("debounce", () => {
 });
 ```
 
-Run: `npm test` — Expected: FAIL (cannot resolve `../preview`).
+Run: `npm test` - Expected: FAIL (cannot resolve `../preview`).
 
 - [ ] **Step 2: Implement `src/preview.ts`**
 
@@ -258,8 +258,8 @@ export function syncPreviewScroll(scroller: HTMLElement): void {
 
 - [ ] **Step 4: Run tests**
 
-Run: `npm test` — Expected: PASS.
-Run: `npx tsc --noEmit` — Expected: clean.
+Run: `npm test` - Expected: PASS.
+Run: `npx tsc --noEmit` - Expected: clean.
 
 - [ ] **Step 5: Commit**
 
@@ -270,7 +270,7 @@ git commit -m "feat: preview pane module with debounce and scroll sync"
 
 ---
 
-### Task 3: Wiring — menu toggle, auto-detect, live updates
+### Task 3: Wiring - menu toggle, auto-detect, live updates
 
 **Files:**
 - Modify: `src/menu.ts`, `src/main.ts`
@@ -344,16 +344,16 @@ In the `onDocChanged` callback passed to `createEditor`, add:
 ```ts
 updatePreview(getText(view));
 ```
-(after the dirty-flag logic — `getText` is already imported by the foundation).
+(after the dirty-flag logic - `getText` is already imported by the foundation).
 
-Menu action wiring — add to the `setupMenu(...)` actions object:
+Menu action wiring - add to the `setupMenu(...)` actions object:
 ```ts
 togglePreview: (on) => {
   setPreviewVisible(on);
   if (on) renderPreviewNow(getText(view));
 },
 ```
-and capture the returned handles: `const menuHandles = await setupMenu({...})` (SP-1 already introduced `menuHandles` — just ensure `previewItem` is in it).
+and capture the returned handles: `const menuHandles = await setupMenu({...})` (SP-1 already introduced `menuHandles` - just ensure `previewItem` is in it).
 
 Scroll sync (after editor creation):
 ```ts
@@ -364,7 +364,7 @@ view.scrollDOM.addEventListener("scroll", () => {
 
 - [ ] **Step 3: Verify**
 
-Run: `npx tsc --noEmit` && `npm test` — clean/green.
+Run: `npx tsc --noEmit` && `npm test` - clean/green.
 Run: `npm run tauri dev` and check:
 - Open a `.md` file → split view appears automatically, right pane rendered.
 - Type `# Hello` → right pane shows the heading ~150 ms after you stop typing.
@@ -391,7 +391,7 @@ git commit -m "feat: live markdown split preview with auto-toggle"
 - [ ] **Step 1: Run and record**
 
 ```markdown
-# SP-2 verification — YYYY-MM-DD
+# SP-2 verification - YYYY-MM-DD
 
 - [ ] `npm test`, `npx tsc --noEmit` green
 - [ ] .md open → auto split; .txt open → no split
@@ -415,5 +415,5 @@ git commit -m "test: sp-2 verification checklist results"
 ## Self-review notes (already applied)
 
 - Spec coverage: renderer+sanitize (T1), pane/debounce/scroll/CSS (T2), toggle/auto-detect/live wiring (T3), checklist (T4). Source markdown highlighting deliberately skipped per spec.
-- Both merge orders (SP-1 first or SP-2 first) are covered in Task 3 Step 1 — the agent picks the branch state it actually sees.
+- Both merge orders (SP-1 first or SP-2 first) are covered in Task 3 Step 1 - the agent picks the branch state it actually sees.
 - Type consistency: `updatePreview`/`renderPreviewNow`/`setPreviewVisible`/`isPreviewVisible`/`syncPreviewScroll` names match between Tasks 2 and 3.

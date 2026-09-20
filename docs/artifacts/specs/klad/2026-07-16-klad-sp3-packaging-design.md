@@ -1,6 +1,6 @@
-# Klad SP-3: Packaging & OS Integration — Design
+# Klad SP-3: Packaging & OS Integration - Design
 
-Part of the klad multi-plan. Depends on the merged foundation (`feat/klad`) — specifically its CLI-arg file open. Installers that let Klad take over Notepad's place.
+Part of the klad multi-plan. Depends on the merged foundation (`feat/klad`) - specifically its CLI-arg file open. Installers that let Klad take over Notepad's place.
 
 ## Decisions
 
@@ -12,7 +12,7 @@ Part of the klad multi-plan. Depends on the merged foundation (`feat/klad`) — 
 | Linux | `.deb` + AppImage; `.desktop` with `MimeType=text/plain;text/markdown;`; README documents `xdg-mime` default commands | Standard xdg flow |
 | Icon | Simple flat SVG (blue rounded square, white "K") → rasterized once via `sharp` script → `tauri icon` generates all sizes | No design dependency; deterministic |
 | Cross-platform builds | GitHub Actions (`tauri-action`), matrix windows-latest + ubuntu-22.04, on `v*` tags → draft release; `workflow_dispatch` for test runs | Dev box is Windows; Linux artifacts must come from CI. Workflow is inert until the repo gets a GitHub remote |
-| Single instance | Not used — every launch/double-click opens its own window | Classic Notepad behavior, zero plugin code |
+| Single instance | Not used - every launch/double-click opens its own window | Classic Notepad behavior, zero plugin code |
 
 ## Components (touches)
 
@@ -27,7 +27,7 @@ README.md                     build instructions + "make Klad the default" for W
 
 ## Verification reality
 
-- Windows: full local verification — `npm run tauri build`, install the NSIS exe, double-click a `.txt`/`.md` → opens in Klad after setting default; uninstall cleans associations.
+- Windows: full local verification - `npm run tauri build`, install the NSIS exe, double-click a `.txt`/`.md` → opens in Klad after setting default; uninstall cleans associations.
 - Linux: config-level verification locally (generated `.desktop` inspected in bundle output structure via CI artifact once pushed). Known limit: `.deb`/AppImage smoke test happens on CI or a Linux box, not on the Windows dev machine. If tauri-bundler's generated `.desktop` lacks `MimeType` entries from `fileAssociations`, fall back to a custom `desktopTemplate` (task includes the template inline).
 
 ## Error handling

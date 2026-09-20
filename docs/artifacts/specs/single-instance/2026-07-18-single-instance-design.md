@@ -1,4 +1,4 @@
-﻿# Single-Instance Mode — Design
+# Single-Instance Mode - Design
 
 - **Date:** 2026-07-18
 - **Topic:** `single-instance`
@@ -26,7 +26,7 @@ The fix is now scoped and approved.
 
 ### Non-goals (YAGNI for v1)
 
-- **Multi-arg CLI.** `klad a.txt b.txt c.txt` keeps the existing single-path semantics. The original tabs/session spec §2 deferred multi-arg "until single-instance exists"; deferring it again — v1 of single-instance is forward-compatible with multi-arg (the plugin gives us the full argv array), we just don't iterate it.
+- **Multi-arg CLI.** `klad a.txt b.txt c.txt` keeps the existing single-path semantics. The original tabs/session spec §2 deferred multi-arg "until single-instance exists"; deferring it again - v1 of single-instance is forward-compatible with multi-arg (the plugin gives us the full argv array), we just don't iterate it.
 - **Linux/macOS argv quirks for shell globbing.** The OS-launched process gets the literal argv from the shell; whatever the user typed or Explorer quoted is what we forward.
 - **`--new-instance` escape hatch.** Some apps (Firefox, Code) provide a flag to bypass single-instance. Out of scope; add if anyone asks.
 - **Inter-instance drag-drop / IPC beyond argv.** Not requested.
@@ -34,7 +34,7 @@ The fix is now scoped and approved.
 
 ## 3. Approach
 
-Add `tauri-plugin-single-instance` to the Rust side. Its `init` callback receives `(app, argv, cwd)` whenever a second process tries to launch; the callback (a) emits a Tauri event to the `main` webview with the argv, then (b) raises the existing window. The second process exits automatically — the plugin handles the early-return.
+Add `tauri-plugin-single-instance` to the Rust side. Its `init` callback receives `(app, argv, cwd)` whenever a second process tries to launch; the callback (a) emits a Tauri event to the `main` webview with the argv, then (b) raises the existing window. The second process exits automatically - the plugin handles the early-return.
 
 The frontend's existing `openPath(path)` is the natural consumer for forwarded argv: it already handles dedup-or-create, missing-file errors via `showError`, and triggers session-save through `scheduleSessionSave`. We just need a one-time event listener that calls it for each forwarded path.
 
@@ -56,7 +56,7 @@ OS shell        second klad process        first klad process       frontend
    |                   | exit                     |                     |
 ```
 
-The second process never reaches `main()`'s `tauri::Builder::default()` for the dialog/webview startup — the plugin's lockfile/pipe intercepts before window construction. (Verified by Tauri's plugin docs and the `tauri-plugin-single-instance` README.)
+The second process never reaches `main()`'s `tauri::Builder::default()` for the dialog/webview startup - the plugin's lockfile/pipe intercepts before window construction. (Verified by Tauri's plugin docs and the `tauri-plugin-single-instance` README.)
 
 ## 5. Module and file changes
 
@@ -84,7 +84,7 @@ The Rust callback emits the literal shape `{ argv: string[]; cwd: string }` to t
 
 ### Untouched (called out because AGENTS.md catalogs them)
 
-`src-tauri/src/fs_cmds.rs` (no new Tauri commands), `src-tauri/tauri.conf.json` (no `fileAssociations` change), `package.json` (no new JS deps — frontend uses existing `@tauri-apps/api/event`), `src/tabs.ts`, `src/session.ts`, `src/tabbar.ts`, `src/document.ts`, `src/editor.ts`, `src/statusbar.ts`, `src/preview.ts`, `src/render.ts`, `src/settings.ts`, `src/dialogs.ts`, `index.html`, `src/styles.css`.
+`src-tauri/src/fs_cmds.rs` (no new Tauri commands), `src-tauri/tauri.conf.json` (no `fileAssociations` change), `package.json` (no new JS deps - frontend uses existing `@tauri-apps/api/event`), `src/tabs.ts`, `src/session.ts`, `src/tabbar.ts`, `src/document.ts`, `src/editor.ts`, `src/statusbar.ts`, `src/preview.ts`, `src/render.ts`, `src/settings.ts`, `src/dialogs.ts`, `index.html`, `src/styles.css`.
 
 ## 6. Behaviors
 
@@ -95,7 +95,7 @@ The Rust callback emits the literal shape `{ argv: string[]; cwd: string }` to t
 3. P1's `init` callback fires on the main thread with `(app, argv, cwd)`. It:
    - Builds `Payload { argv, cwd }` and calls `app.emit_to("main", "single-instance", payload)`.
    - Calls `app.get_webview_window("main")` and runs the raise sequence: `unminimize()` (no-op if not minimized) → `show()` (no-op if visible) → `set_focus()`.
-4. Frontend's `listenOpenFile` handler receives the payload, skips argv[0], and for each remaining entry calls `openPath(p)`. The existing logic dedups (file already open → switch to it), reads from disk (re-reads on every open — picks up external edits), and persists the new tab via `scheduleSessionSave`.
+4. Frontend's `listenOpenFile` handler receives the payload, skips argv[0], and for each remaining entry calls `openPath(p)`. The existing logic dedups (file already open → switch to it), reads from disk (re-reads on every open - picks up external edits), and persists the new tab via `scheduleSessionSave`.
 
 ### Second launch with no args (`klad`)
 
@@ -142,7 +142,7 @@ None. The plugin's argv-forward is Rust-side; the frontend's event listener is g
 ### Build verification
 
 - `npm run build` (TypeScript + Vite).
-- `cd src-tauri && cargo test` — must remain green (regression gate; no Rust source changes, only Cargo.toml + main.rs additions).
+- `cd src-tauri && cargo test` - must remain green (regression gate; no Rust source changes, only Cargo.toml + main.rs additions).
 
 ### Manual smoke (in `npm run tauri dev`)
 
@@ -153,7 +153,7 @@ Per the project's existing convention for `main.ts`-driven integration work:
 3. Verify: existing klad window comes to front, the named file opens as a new tab, no second window appears.
 4. Double-click a different file from Explorer → existing window raises again, the file opens as a new tab. Two tabs now.
 5. Close the foreground tab → tab closes; window stays.
-6. Quit klad entirely. Re-run `cargo run -- /path/to/some.txt`. Verify: klad launches, file opens as a single tab (no restore conflict — first launch, no session yet).
+6. Quit klad entirely. Re-run `cargo run -- /path/to/some.txt`. Verify: klad launches, file opens as a single tab (no restore conflict - first launch, no session yet).
 7. Quit. Re-launch `npm run tauri dev` → session restore should bring back both named tabs from step 4.
 
 ### Smoke failure modes to verify

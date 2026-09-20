@@ -1,4 +1,4 @@
-# Dark Theme Toggle — Implementation Plan
+# Dark Theme Toggle - Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Vanilla TypeScript, Vite 6, vitest, CodeMirror 6, Tauri 2 menu API.
 
-**Spec:** `docs/artifacts/specs/dark-theme/2026-07-18-dark-theme-design.md` (read this first — every decision is justified there).
+**Spec:** `docs/artifacts/specs/dark-theme/2026-07-18-dark-theme-design.md` (read this first - every decision is justified there).
 
 ## Global Constraints
 
@@ -16,7 +16,7 @@
 - **No backend changes.** `src-tauri/**` is untouched. `cargo test` is not run for this work.
 - **No `index.html` changes.** The `data-theme` attribute is set imperatively from JS on `document.documentElement`.
 - **No new Tauri commands, no new capabilities, no new `invoke()` wrappers.** Theme is frontend-only.
-- **Editor buffer LF-normalization, encoding-label contract, preview auto-toggle, no-web-framework** rules from `AGENTS.md` all still apply — nothing in this plan touches them.
+- **Editor buffer LF-normalization, encoding-label contract, preview auto-toggle, no-web-framework** rules from `AGENTS.md` all still apply - nothing in this plan touches them.
 - **Encoding of the theme value across the system:** the literal strings `"light"` and `"dark"` flow `settings.ts` → `localStorage` JSON → `main.ts` → `document.documentElement.dataset.theme` → CSS `[data-theme="..."]` selector. Changing the casing/spelling of either string breaks the cascade. Treat them as a contract.
 - **Commit messages:** Conventional Commits 1.0.0 with scope = module (`feat(settings)`, `feat(styles)`, `feat(menu)`). One logical change per commit.
 - **Branch:** cut `feat/dark-theme` from latest `main` before starting Task 1. Each task ends with one commit on this branch.
@@ -38,14 +38,14 @@ Three tasks, three commits. Each task ends with a green test suite (`npm run tes
 
 ---
 
-## Task 1: Settings — add `theme` field (TDD)
+## Task 1: Settings - add `theme` field (TDD)
 
 **Files:**
 - Modify: `src/settings.ts` (lines 1-13 for interface/defaults, lines 25-40 for parser)
 - Modify: `src/__tests__/settings.test.ts` (append new test cases)
 
 **Interfaces:**
-- Produces: `Settings.theme: "light" | "dark"` — consumed by Task 3 (`main.ts` reads `settings.theme`, `menu.ts` receives `settings.theme === "dark"` as `initialThemeDark`).
+- Produces: `Settings.theme: "light" | "dark"` - consumed by Task 3 (`main.ts` reads `settings.theme`, `menu.ts` receives `settings.theme === "dark"` as `initialThemeDark`).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -80,7 +80,7 @@ Append to `src/__tests__/settings.test.ts` (after the existing `clampZoom` test,
   });
 ```
 
-Also update the existing `null/corrupt/partial input falls back to defaults` test if needed — it should still pass unchanged because `DEFAULT_SETTINGS` will include `theme: "light"` and `parseSettings('{"zoom":150}')` will produce `{ ...DEFAULT_SETTINGS, zoom: 150 }` (theme defaults to "light"). No edit required to that test.
+Also update the existing `null/corrupt/partial input falls back to defaults` test if needed - it should still pass unchanged because `DEFAULT_SETTINGS` will include `theme: "light"` and `parseSettings('{"zoom":150}')` will produce `{ ...DEFAULT_SETTINGS, zoom: 150 }` (theme defaults to "light"). No edit required to that test.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -120,7 +120,7 @@ In `src/settings.ts`, add a line inside `parseSettings` immediately after the `f
   return out;
 ```
 
-The strict `=== "light" || === "dark"` check rejects every wrong type automatically (no `typeof` guard needed — `obj.theme === "light"` is false for numbers, null, undefined, booleans, and any other string).
+The strict `=== "light" || === "dark"` check rejects every wrong type automatically (no `typeof` guard needed - `obj.theme === "light"` is false for numbers, null, undefined, booleans, and any other string).
 
 - [ ] **Step 5: Run the tests to verify they pass**
 
@@ -130,7 +130,7 @@ Expected: all 9 tests PASS (4 pre-existing + 5 new).
 - [ ] **Step 6: Run the full frontend test suite + type check**
 
 Run: `npm run test`
-Expected: all test files pass. (If any test fails and the failure is unrelated to the `theme` field, that is a pre-existing condition on `main` — note it and proceed. As of plan authoring, `npx tsc --noEmit` is clean and the suite is green.)
+Expected: all test files pass. (If any test fails and the failure is unrelated to the `theme` field, that is a pre-existing condition on `main` - note it and proceed. As of plan authoring, `npx tsc --noEmit` is clean and the suite is green.)
 
 Run: `npm run build`
 Expected: `tsc` exits 0, Vite build succeeds.
@@ -185,7 +185,7 @@ Insert at the very top of `src/styles.css` (before the existing `html, body {` r
 
 - [ ] **Step 2: Replace every hardcoded hex literal with the matching variable**
 
-Apply the following edits (each is one `edit` call — match on the line content shown):
+Apply the following edits (each is one `edit` call - match on the line content shown):
 
 | Line(s) | Old | New |
 |---|---|---|
@@ -216,9 +216,9 @@ Apply the following edits (each is one `edit` call — match on the line content
 | 180 | `color: #444;` (`#new-tab`) | `color: var(--fg-muted);` |
 | 184 | `#new-tab:hover { background: #e0e0e0; }` | `#new-tab:hover { background: var(--hover-bg); }` |
 
-Line 51's `box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);` is left as-is — it is a dialog drop-shadow, invisible on a dark backdrop (the dialog itself sits on the dark page), harmless in both modes. No variable needed.
+Line 51's `box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);` is left as-is - it is a dialog drop-shadow, invisible on a dark backdrop (the dialog itself sits on the dark page), harmless in both modes. No variable needed.
 
-Lines 28-29 already use `var(--editor-font-family, …)` / `var(--editor-font-size, …)` — leave untouched.
+Lines 28-29 already use `var(--editor-font-family, …)` / `var(--editor-font-size, …)` - leave untouched.
 
 - [ ] **Step 3: Append the 6 CodeMirror dark-mode overrides**
 
@@ -235,9 +235,9 @@ Append at the very end of `src/styles.css`:
 [data-theme="dark"] .cm-content ::selection { background-color: var(--hover-bg); }
 ```
 
-Note on specificity: each rule is `[data-theme="dark"] .cm-*` — the attribute selector counts as a class for specificity, giving 0,2,0. CodeMirror's built-in stylesheet uses bare `.cm-editor` / `.cm-gutters` / etc. (0,1,0), so our scoped rules win. The existing `#editor .cm-editor { height: 100%; }` rule at line 21 doesn't set background or color, so it doesn't fight us on those properties — no need for an `#editor` prefix.
+Note on specificity: each rule is `[data-theme="dark"] .cm-*` - the attribute selector counts as a class for specificity, giving 0,2,0. CodeMirror's built-in stylesheet uses bare `.cm-editor` / `.cm-gutters` / etc. (0,1,0), so our scoped rules win. The existing `#editor .cm-editor { height: 100%; }` rule at line 21 doesn't set background or color, so it doesn't fight us on those properties - no need for an `#editor` prefix.
 
-Note on `.cm-activeLine`: deliberately omitted. The `highlightActiveLine()` extension is not loaded (see `src/editor.ts`), so `.cm-activeLine` never appears in the DOM — a rule for it would be dead CSS.
+Note on `.cm-activeLine`: deliberately omitted. The `highlightActiveLine()` extension is not loaded (see `src/editor.ts`), so `.cm-activeLine` never appears in the DOM - a rule for it would be dead CSS.
 
 - [ ] **Step 4: Verify no hex literals remain outside the variable blocks**
 
@@ -254,13 +254,13 @@ Once the app window opens, open DevTools (Tauri dev allows this; if not enabled,
 document.documentElement.dataset.theme = "dark"
 ```
 
-Expected: the entire UI flips to dark — editor surface, tab bar, status bar, and (if you open a `.md` file or paste markdown into a new file) the preview pane. Run:
+Expected: the entire UI flips to dark - editor surface, tab bar, status bar, and (if you open a `.md` file or paste markdown into a new file) the preview pane. Run:
 
 ```js
 document.documentElement.dataset.theme = "light"
 ```
 
-Expected: everything flips back to light with no stray dark artifacts. If any surface doesn't change, re-check Step 2 — a hex literal was missed.
+Expected: everything flips back to light with no stray dark artifacts. If any surface doesn't change, re-check Step 2 - a hex literal was missed.
 
 Close the dev session (`Ctrl+C` in the terminal).
 
@@ -278,7 +278,7 @@ git commit -m "feat(styles): theme-aware CSS variables with dark palette"
 
 ---
 
-## Task 3: Menu + main.ts — add the Dark Theme item and wire it up
+## Task 3: Menu + main.ts - add the Dark Theme item and wire it up
 
 **Files:**
 - Modify: `src/menu.ts` (lines 9-28 `MenuActions`, line 35-38 `setupMenu` signature, after line 86 construct `themeItem`, lines 88-99 `viewMenu`)
@@ -347,7 +347,7 @@ In `src/menu.ts`, immediately after the `previewItem` block (current lines 79-86
   });
 ```
 
-This mirrors the `wrapItem` pattern (lines 71-77) — initial state from an arg, not a post-construction `setChecked` call. We deliberately do **not** add `themeItem` to `MenuHandles`: no consumer needs it (the user-click path auto-syncs via Tauri).
+This mirrors the `wrapItem` pattern (lines 71-77) - initial state from an arg, not a post-construction `setChecked` call. We deliberately do **not** add `themeItem` to `MenuHandles`: no consumer needs it (the user-click path auto-syncs via Tauri).
 
 - [ ] **Step 4: Insert `themeItem` into the View menu**
 
@@ -372,7 +372,7 @@ In `src/menu.ts`, edit the `viewMenu` items array (lines 88-99). Place `themeIte
 - [ ] **Step 5: Verify TypeScript compiles for `menu.ts` in isolation**
 
 Run: `npx tsc --noEmit`
-Expected: TypeScript reports errors only in `src/main.ts` (missing `toggleTheme` in the actions object passed to `setupMenu`, wrong number of args to `setupMenu`). This is expected — we fix it in the next steps. **No errors should reference `src/menu.ts`.**
+Expected: TypeScript reports errors only in `src/main.ts` (missing `toggleTheme` in the actions object passed to `setupMenu`, wrong number of args to `setupMenu`). This is expected - we fix it in the next steps. **No errors should reference `src/menu.ts`.**
 
 - [ ] **Step 6: Add `applyTheme()` to `src/main.ts`**
 
@@ -448,7 +448,7 @@ Expected: all tests pass (Task 1's settings tests still green; no regressions).
 
 Run: `npm run tauri dev`
 
-Walk this checklist (ponytail-style, no framework — verify each surface with your eyes):
+Walk this checklist (ponytail-style, no framework - verify each surface with your eyes):
 
 - [ ] **View menu** shows "Dark Theme" item with `Ctrl+Shift+L` accelerator, unchecked at first run.
 - [ ] Click **Dark Theme** → entire UI flips to dark: editor surface, tab bar, status bar.
@@ -475,15 +475,15 @@ git commit -m "feat(menu): add Dark Theme toggle to View menu"
 
 After Task 3 commits, run once more:
 
-- [ ] **`npm run test`** — all green.
-- [ ] **`npm run build`** — `tsc` clean, Vite build succeeds.
-- [ ] **`git log --oneline main..feat/dark-theme`** — shows exactly three commits matching the messages above.
+- [ ] **`npm run test`** - all green.
+- [ ] **`npm run build`** - `tsc` clean, Vite build succeeds.
+- [ ] **`git log --oneline main..feat/dark-theme`** - shows exactly three commits matching the messages above.
 - [ ] **Catalog check (AGENTS.md red flags):**
-  - `src-tauri/src/main.rs` `invoke_handler![...]` — unchanged.
-  - `src/fileio.ts` — unchanged.
-  - `src-tauri/tauri.conf.json` `bundle.fileAssociations` — unchanged.
-  - `src-tauri/capabilities/default.json` — unchanged.
-  - `package.json` and `src-tauri/Cargo.toml` deps — unchanged.
-  - `index.html` — unchanged.
+  - `src-tauri/src/main.rs` `invoke_handler![...]` - unchanged.
+  - `src/fileio.ts` - unchanged.
+  - `src-tauri/tauri.conf.json` `bundle.fileAssociations` - unchanged.
+  - `src-tauri/capabilities/default.json` - unchanged.
+  - `package.json` and `src-tauri/Cargo.toml` deps - unchanged.
+  - `index.html` - unchanged.
 
 If every checkbox above is green, the feature is complete. Merge `feat/dark-theme` to `main` per the project's normal flow (the user/ orchestrator decides when).

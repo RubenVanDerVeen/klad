@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Tauri v2 app shell — window, menu, CodeMirror 6 editor, New/Open/Save/Save As with dirty tracking, close guard, CLI-arg file open.
+**Goal:** Tauri v2 app shell - window, menu, CodeMirror 6 editor, New/Open/Save/Save As with dirty tracking, close guard, CLI-arg file open.
 
 **Architecture:** Vanilla TypeScript frontend (Vite), CodeMirror 6 editor, Tauri v2 Rust backend exposing `read_file`/`save_file`/`get_startup_file` commands. Menu built with the Tauri v2 JS Menu API (plain JS callbacks). One window = one document, like classic Notepad.
 
@@ -15,17 +15,17 @@
 - Branch: work directly on `feat/klad` (create from `main` first: `git checkout -b feat/klad`).
 - Node ≥ 18, Rust stable toolchain, `npm` as package manager.
 - Product name `Klad`, identifier `dev.ruben.klad`, window title pattern `{*if dirty}{filename} - Klad`, untitled docs are named `Untitled`.
-- Vanilla TS only — no React/Vue/etc. TypeScript `strict: true`.
+- Vanilla TS only - no React/Vue/etc. TypeScript `strict: true`.
 - Editor text is ALWAYS LF-normalized in memory; `eol` (`"LF"` | `"CRLF"`) lives in doc metadata and is applied on save.
-- Encoding labels are exact strings: foundation uses `"UTF-8"` and `"UTF-8 BOM"` (SP-1 adds more — do not rename).
-- Tests: `npm test` (vitest, pure logic only — no DOM test env) and `cargo test` inside `src-tauri/`. UI wiring is verified by the manual checklist in Task 8.
+- Encoding labels are exact strings: foundation uses `"UTF-8"` and `"UTF-8 BOM"` (SP-1 adds more - do not rename).
+- Tests: `npm test` (vitest, pure logic only - no DOM test env) and `cargo test` inside `src-tauri/`. UI wiring is verified by the manual checklist in Task 8.
 - Commit after every task (messages given per task).
-- If the devtools console shows a Tauri permission error (`... not allowed. Permissions associated with this command: <perm>`), add that permission string to `src-tauri/capabilities/default.json` and re-run — do not disable the capability system.
+- If the devtools console shows a Tauri permission error (`... not allowed. Permissions associated with this command: <perm>`), add that permission string to `src-tauri/capabilities/default.json` and re-run - do not disable the capability system.
 - First `npm run tauri dev` compiles the Rust workspace: several minutes is normal.
 
 ---
 
-### Task 1: Scaffold — dev app boots
+### Task 1: Scaffold - dev app boots
 
 **Files:**
 - Create: `.gitignore`, `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, `src/styles.css`, `src/main.ts`, `src-tauri/Cargo.toml`, `src-tauri/build.rs`, `src-tauri/tauri.conf.json`, `src-tauri/capabilities/default.json`, `src-tauri/src/main.rs`
@@ -203,7 +203,7 @@ dialog {
 }
 ```
 
-`src/main.ts` (placeholder for this task only — replaced in Task 4):
+`src/main.ts` (placeholder for this task only - replaced in Task 4):
 ```ts
 document.getElementById("editor")!.textContent = "klad scaffold ok";
 ```
@@ -279,7 +279,7 @@ fn main() {
 }
 ```
 
-`src-tauri/src/main.rs` (minimal for this task — commands come in Task 3):
+`src-tauri/src/main.rs` (minimal for this task - commands come in Task 3):
 ```rust
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -319,7 +319,7 @@ git commit -m "feat: tauri v2 scaffold, app shell boots"
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `interface DocMeta { path: string | null; encoding: string; eol: "LF" | "CRLF"; dirty: boolean }`, `newDoc(): DocMeta`, `defaultEol(ua?: string): "LF" | "CRLF"`, `fileName(meta: DocMeta): string`, `windowTitle(meta: DocMeta): string`. SP-1's status bar and SP-2's extension checks read `DocMeta` — do not rename fields.
+- Produces: `interface DocMeta { path: string | null; encoding: string; eol: "LF" | "CRLF"; dirty: boolean }`, `newDoc(): DocMeta`, `defaultEol(ua?: string): "LF" | "CRLF"`, `fileName(meta: DocMeta): string`, `windowTitle(meta: DocMeta): string`. SP-1's status bar and SP-2's extension checks read `DocMeta` - do not rename fields.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -358,7 +358,7 @@ describe("document model", () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npm test`
-Expected: FAIL — cannot resolve `../document`.
+Expected: FAIL - cannot resolve `../document`.
 
 - [ ] **Step 3: Implement**
 
@@ -413,7 +413,7 @@ git commit -m "feat: document metadata model"
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces (frozen — SP-1 changes internals only, never these signatures):
+- Produces (frozen - SP-1 changes internals only, never these signatures):
   - `read_file(path: String) -> Result<FileDoc, String>` where `FileDoc { text: String, encoding: String, eol: String }`; `text` LF-normalized, BOM stripped.
   - `save_file(path: String, text: String, encoding: String, eol: String) -> Result<(), String>`.
   - `get_startup_file() -> Option<String>`.
@@ -581,7 +581,7 @@ fn main() {
 - [ ] **Step 2: Run tests**
 
 Run: `cd src-tauri` then `cargo test`
-Expected: PASS (5 tests). (If you wrote the tests first without the impl, verify the FAIL first; the module above is small enough that file-at-once is acceptable — the tests still gate the commit.)
+Expected: PASS (5 tests). (If you wrote the tests first without the impl, verify the FAIL first; the module above is small enough that file-at-once is acceptable - the tests still gate the commit.)
 
 - [ ] **Step 3: Commit**
 
@@ -750,7 +750,7 @@ export function showError(message: string): void {
 }
 ```
 
-DOM glue is covered by the Task 8 manual checklist, not unit tests (deliberate — no DOM test environment in this project).
+DOM glue is covered by the Task 8 manual checklist, not unit tests (deliberate - no DOM test environment in this project).
 
 - [ ] **Step 2: Type-check**
 
@@ -774,7 +774,7 @@ git commit -m "feat: invoke wrappers and in-app save/error dialogs"
 
 **Interfaces:**
 - Consumes: Tasks 2-5 modules; `@tauri-apps/plugin-dialog` `open`/`save`; `@tauri-apps/api/window` `getCurrentWindow`; `@tauri-apps/api/menu`.
-- Produces: `interface MenuActions { newFile(): void; openFile(): void; saveFile(): void; saveFileAs(): void; exit(): void }`, `setupMenu(actions: MenuActions): Promise<void>`. SP-1/SP-2 EXTEND `MenuActions` and add submenus inside `setupMenu` — keep the File/Edit submenu construction in the order written here.
+- Produces: `interface MenuActions { newFile(): void; openFile(): void; saveFile(): void; saveFileAs(): void; exit(): void }`, `setupMenu(actions: MenuActions): Promise<void>`. SP-1/SP-2 EXTEND `MenuActions` and add submenus inside `setupMenu` - keep the File/Edit submenu construction in the order written here.
 
 - [ ] **Step 1: Implement menu module**
 
@@ -954,7 +954,7 @@ Run: `npm run tauri dev` and check:
 - File → New with unsaved changes → Save/Don't Save/Cancel prompt appears; Cancel keeps the buffer.
 - Edit → Cut/Copy/Paste work on a selection.
 
-Expected: all pass. (Close guard on the X button is Task 7 — not yet expected to prompt.)
+Expected: all pass. (Close guard on the X button is Task 7 - not yet expected to prompt.)
 
 - [ ] **Step 4: Run checks**
 
@@ -1024,7 +1024,7 @@ git commit -m "feat: unsaved-changes guard on window close"
 
 Create `docs/artifacts/verification/klad-foundation-checklist.md` with each line marked PASS/FAIL after actually doing it:
 ```markdown
-# Foundation verification — YYYY-MM-DD
+# Foundation verification - YYYY-MM-DD
 
 - [ ] `npm test` green
 - [ ] `cargo test` green (run in src-tauri/)
@@ -1034,8 +1034,8 @@ Create `docs/artifacts/verification/klad-foundation-checklist.md` with each line
 - [ ] New/Open/Save/Save As/Exit all reachable via menu AND shortcut
 - [ ] Save→reopen round-trip preserves content exactly (create a file with CRLF in another editor, open, save, confirm CRLF preserved via `git diff --no-index` or a hex viewer)
 - [ ] UTF-8 BOM file keeps its BOM after save
-- [ ] Unsaved-changes prompt on: New, Open, Exit, window X — all three buttons behave
-- [ ] Open failure (delete a file, then open it via a stale path if reproducible — otherwise open a locked file) shows the error dialog, app stays alive
+- [ ] Unsaved-changes prompt on: New, Open, Exit, window X - all three buttons behave
+- [ ] Open failure (delete a file, then open it via a stale path if reproducible - otherwise open a locked file) shows the error dialog, app stays alive
 ```
 
 - [ ] **Step 2: Fix anything that fails, then commit**
@@ -1049,6 +1049,6 @@ git commit -m "test: foundation verification checklist results"
 
 ## Self-review notes (already applied)
 
-- Spec coverage: shell/layout (T1), doc model (T2), Rust I/O + CLI arg (T3), editor core (T4), dialogs (T5), menu + flows (T6), close guard (T7), verification (T8). Spec's "UTF-8 only" widened to include BOM preservation — 3 lines that prevent silently rewriting users' files; noted in spec terms as foundation behavior.
+- Spec coverage: shell/layout (T1), doc model (T2), Rust I/O + CLI arg (T3), editor core (T4), dialogs (T5), menu + flows (T6), close guard (T7), verification (T8). Spec's "UTF-8 only" widened to include BOM preservation - 3 lines that prevent silently rewriting users' files; noted in spec terms as foundation behavior.
 - Type consistency: `DocMeta`, `FileDoc`, `MenuActions`, `createEditor` signatures match across tasks and are the frozen interfaces the SP plans reference.
 - No placeholders: every step has full code or an exact command + expected output.

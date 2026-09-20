@@ -1,4 +1,4 @@
-# Keyboard Shortcuts for Browser-Intercepted Actions — Design
+# Keyboard Shortcuts for Browser-Intercepted Actions - Design
 
 - **Date:** 2026-08-02
 - **Topic:** `keyboard-shortcuts`
@@ -21,7 +21,7 @@ Discriminating evidence gathered via the `systematic-debugging` skill (Phase 1):
 | Ctrl+W (close tab) works | Has a JS `keydown` fallback at `src/main.ts:432-444`. |
 | Ctrl+Tab (next tab) works | Same JS `keydown` fallback. |
 | Ctrl+P (print) works | Both the browser default **and** the menu action do the same thing (`window.print()`); the user sees the print dialog either way. |
-| Ctrl+N, Ctrl+S, Ctrl+O do **not** work | No JS fallback; menu accelerator is the only path — and it doesn't fire (see §2). |
+| Ctrl+N, Ctrl+S, Ctrl+O do **not** work | No JS fallback; menu accelerator is the only path - and it doesn't fire (see §2). |
 
 ## 2. Root cause
 
@@ -31,10 +31,10 @@ On Windows, klad's webview is **WebView2** (Edge/Chromium). WebView2 intercepts 
 - Ctrl+O (open file)
 - Ctrl+S (save page)
 - Ctrl+Shift+S (save page as)
-- Ctrl+W (close tab) — already mitigated
-- Ctrl+P (print) — coincidentally works (same action both layers)
+- Ctrl+W (close tab) - already mitigated
+- Ctrl+P (print) - coincidentally works (same action both layers)
 
-For the Ctrl+S/N/O class, the keydown event **does** still reach the webview's `window` listener (it's only the accelerator that's swallowed), so a JS `keydown` handler can intercept and reroute them. The Tauri menu accelerator cannot be made to fire for these via app code — it's an upstream WebView2 behavior.
+For the Ctrl+S/N/O class, the keydown event **does** still reach the webview's `window` listener (it's only the accelerator that's swallowed), so a JS `keydown` handler can intercept and reroute them. The Tauri menu accelerator cannot be made to fire for these via app code - it's an upstream WebView2 behavior.
 
 The existing `keydown` handler at `src/main.ts:429-444` already implements exactly this reroute for Ctrl+W and Ctrl+Tab, with a comment that names the rationale:
 
@@ -44,7 +44,7 @@ The existing `keydown` handler at `src/main.ts:429-444` already implements exact
 // accelerator is disabled or in dev builds), so we let it close/switch here too.
 ```
 
-The same defense is needed for the file-action shortcuts the user is hitting. Not a regression from the session-restore / hot-exit / restore-on-launch work — this has been latent since `d4b3c18 feat(tabs): add keyboard shortcuts and Tabs menu`.
+The same defense is needed for the file-action shortcuts the user is hitting. Not a regression from the session-restore / hot-exit / restore-on-launch work - this has been latent since `d4b3c18 feat(tabs): add keyboard shortcuts and Tabs menu`.
 
 ## 3. Why not "fix the accelerator"?
 
@@ -90,7 +90,7 @@ window.addEventListener("keydown", (e) => {
 That is the entire code change. Update the comment above it (currently lines 429-431) to reflect the wider coverage and the WebView2 intercept root cause.
 
 ### Why no double-action
-On Windows/WebView2, when a menu accelerator fires, the keystroke is consumed at the Win32 menu loop and the webview `keydown` does **not** fire. When WebView2 intercepts the key as a browser shortcut, the accelerator does **not** fire but `keydown` does. So adding these branches can't cause both paths to run for one keystroke — it only fills in when the accelerator was swallowed. (Same property that lets the existing Ctrl+W/Tab branches ship without double-close.) On Linux (WebKitGTK), the accelerator handles these and the keydown is a harmless no-op duplicate that `e.preventDefault()` neutralizes.
+On Windows/WebView2, when a menu accelerator fires, the keystroke is consumed at the Win32 menu loop and the webview `keydown` does **not** fire. When WebView2 intercepts the key as a browser shortcut, the accelerator does **not** fire but `keydown` does. So adding these branches can't cause both paths to run for one keystroke - it only fills in when the accelerator was swallowed. (Same property that lets the existing Ctrl+W/Tab branches ship without double-close.) On Linux (WebKitGTK), the accelerator handles these and the keydown is a harmless no-op duplicate that `e.preventDefault()` neutralizes.
 
 ### Functions consumed (all in `src/main.ts`, unchanged)
 - `doNew(): Promise<void>` (`main.ts:288`)
@@ -111,15 +111,15 @@ On Windows/WebView2, when a menu accelerator fires, the keystroke is consumed at
 Per project convention (tabs spec §12): `main.ts` integration behavior is **not** unit-tested; pure logic is already covered. The verification bar is the existing automated suite staying green + a focused manual smoke.
 
 ### Automated (must stay green)
-- `npx tsc --noEmit` — 0 errors.
-- `npm test` — vitest suite, 0 failed.
-- `cargo test --manifest-path src-tauri/Cargo.toml` — 0 failed (no Rust change; regression guard).
+- `npx tsc --noEmit` - 0 errors.
+- `npm test` - vitest suite, 0 failed.
+- `cargo test --manifest-path src-tauri/Cargo.toml` - 0 failed (no Rust change; regression guard).
 
 ### Manual smoke (acceptance)
 Build the binary: `cargo build --manifest-path src-tauri/Cargo.toml`. Launch `src-tauri/target/debug/klad.exe`. For each shortcut, focus the editor, press the combo, and verify:
 
-1. **Ctrl+N** → new untitled tab is created and activated. (WebView2's "new window" default must NOT fire — no second klad window appears.)
-2. **Ctrl+O** → the OS file-open dialog appears. (WebView2's "open file" default must NOT fire — or if it does, it's the same dialog, no double.)
+1. **Ctrl+N** → new untitled tab is created and activated. (WebView2's "new window" default must NOT fire - no second klad window appears.)
+2. **Ctrl+O** → the OS file-open dialog appears. (WebView2's "open file" default must NOT fire - or if it does, it's the same dialog, no double.)
 3. **Ctrl+S on a clean untitled tab** → triggers Save As (file dialog). On a named clean tab → no-op (already clean). On a dirty named tab → writes to disk, dirty clears.
 4. **Ctrl+Shift+S** → Save As dialog (regardless of dirty/path state).
 5. **Regression guards:** Ctrl+W still closes a tab; Ctrl+Tab still cycles tabs; Ctrl+P still opens print; clicking File → Save with the mouse still works; typing `s`, `n`, `o` **without** Ctrl in the editor still inserts those characters (the handler returns early when `!ctrl`).
@@ -136,7 +136,7 @@ All five must pass. The Ctrl+N case is the most important to verify no second wi
 | `src-tauri/capabilities/default.json` | No |
 | `package.json` / `Cargo.toml` deps | No |
 | `index.html` | No |
-| `src/menu.ts` | No — menu and accelerators unchanged; the fallback only reroutes to the same action fns. |
+| `src/menu.ts` | No - menu and accelerators unchanged; the fallback only reroutes to the same action fns. |
 
 Only `src/main.ts` is modified. No red flags.
 

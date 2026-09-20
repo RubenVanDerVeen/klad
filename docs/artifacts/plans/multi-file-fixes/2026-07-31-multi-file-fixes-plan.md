@@ -1,8 +1,8 @@
-# Multi-file / dirty-state / close-prompt fixes — Implementation Plan
+# Multi-file / dirty-state / close-prompt fixes - Implementation Plan
 
 > **For agentic workers:** Execute task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Per-task: write failing test (when applicable) → implement → verify → Conventional Commit. Two-strike failures escalate to the oracle.
 
-**Goal:** Fix three multi-tab bugs — (1) editor text doesn't change on tab switch, (2) opening a file falsely marks it dirty, (3) close prompts unchanged files and named-file unsaved edits aren't remembered — so tabs switch correctly, only real edits mark dirty, and unsaved edits to any file survive restart.
+**Goal:** Fix three multi-tab bugs - (1) editor text doesn't change on tab switch, (2) opening a file falsely marks it dirty, (3) close prompts unchanged files and named-file unsaved edits aren't remembered - so tabs switch correctly, only real edits mark dirty, and unsaved edits to any file survive restart.
 
 **Architecture:** Bug 1 is a one-line CSS override (CodeMirror's `.cm-editor { display: flex !important }` defeats the `hidden` attribute). Bug 2 tags programmatic `setText` loads with a CodeMirror `Annotation` so the dirty listener ignores them. Bug 3 widens the existing localStorage hot-exit from untitled-only to all dirty buffers, restores dirty named buffers from the blob instead of re-reading disk, and makes "Don't Save" a true discard.
 
@@ -13,9 +13,9 @@
 ## Global Constraints
 
 - **Branch:** `fix/multi-file-tabs`, cut from latest `main`.
-- **LF-only buffer:** the CodeMirror buffer is always LF-normalized; CRLF is a save-time concern. Restored buffer text is already LF (it came from the editor) — do not re-normalize.
+- **LF-only buffer:** the CodeMirror buffer is always LF-normalized; CRLF is a save-time concern. Restored buffer text is already LF (it came from the editor) - do not re-normalize.
 - **No new dependencies.** `Annotation` comes from the already-installed `@codemirror/state`. Do not add packages.
-- **Encoding labels are a verbatim cross-process contract** — this plan does not touch them, but do not rename/case them anywhere.
+- **Encoding labels are a verbatim cross-process contract** - this plan does not touch them, but do not rename/case them anywhere.
 - **Conventional Commits 1.0.0**, scope = module (e.g. `fix(editor):`, `feat(session):`), never the discipline.
 - **Catalogs:** no new Tauri command / file association / capability / dialog markup. `src-tauri/src/main.rs`, `src/fileio.ts`, `src-tauri/tauri.conf.json`, `src-tauri/capabilities/default.json`, `index.html` must NOT be modified by this plan.
 - **Verification gate before "done":** both `npm test` and `cargo test` pass, plus `npx tsc --noEmit` is clean, plus the manual smoke checklist (Task 6).
@@ -29,7 +29,7 @@
 |---|---|---|
 | `src/styles.css` | Editor pane layout | +1 rule to make `hidden` work on `.cm-editor` |
 | `src/editor.ts` | CodeMirror factory + text accessors | Add `Annotation`; gate dirty listener; annotate `setText` |
-| `src/__tests__/editor.test.ts` | NEW — editor-layer unit test (jsdom) | Assert programmatic load isn't dirty, user edit is |
+| `src/__tests__/editor.test.ts` | NEW - editor-layer unit test (jsdom) | Assert programmatic load isn't dirty, user edit is |
 | `src/session.ts` | Session (de)serialization | `toSession` persists text for all dirty tabs; comment updates |
 | `src/tabs.ts` | Tab state types | `unsavedText` comment update |
 | `src/main.ts` | App orchestration | `persistSessionNow` syncs all dirty buffers; `restoreSessionOrNew` restores dirty named buffers (with dedup); `onCloseRequested` discard → `dirty=false` |
@@ -39,7 +39,7 @@ No new modules; responsibilities stay where they are.
 
 ---
 
-## Task 1: CSS — make `hidden` hide inactive editors (Bug 1)
+## Task 1: CSS - make `hidden` hide inactive editors (Bug 1)
 
 **Files:**
 - Modify: `src/styles.css` (after the `#editor .cm-editor { height: 100% }` block, currently lines 49-51)
@@ -131,7 +131,7 @@ describe("editor dirty handling", () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run src/__tests__/editor.test.ts`
-Expected: the first test FAILS — `setText` currently dispatches a plain change, so `onDocChanged` is called once. (Second test already passes.)
+Expected: the first test FAILS - `setText` currently dispatches a plain change, so `onDocChanged` is called once. (Second test already passes.)
 
 - [ ] **Step 3: Implement the annotation guard**
 
@@ -211,7 +211,7 @@ git commit -m "fix(editor): keep files clean when loaded programmatically via se
 
 ---
 
-## Task 3: Persist unsaved edits for all dirty tabs (Bug 3a — write path)
+## Task 3: Persist unsaved edits for all dirty tabs (Bug 3a - write path)
 
 **Files:**
 - Modify: `src/session.ts` (`toSession`)
@@ -262,7 +262,7 @@ Expected: "toSession persists text for all dirty tabs…" FAILS (dirty named `t3
 
 - [ ] **Step 3: Widen `toSession`**
 
-In `src/session.ts`, replace the body of `toSession` (the `coll.tabs.map` block) — find:
+In `src/session.ts`, replace the body of `toSession` (the `coll.tabs.map` block) - find:
 
 ```ts
     // Persist text only for untitled dirty buffers (caller sets unsavedText).
@@ -355,7 +355,7 @@ git commit -m "feat(session): persist unsaved edits for named files in localStor
 
 ---
 
-## Task 4: Restore dirty named buffers + true discard on close (Bug 3b — read path)
+## Task 4: Restore dirty named buffers + true discard on close (Bug 3b - read path)
 
 **Files:**
 - Modify: `src/main.ts` (`restoreSessionOrNew`, `onCloseRequested`)
@@ -396,7 +396,7 @@ and replace with:
       // Dirty named buffer: restore the user's unsaved edits (do NOT re-read disk).
       // Dedup like openPath: a forwarded single-instance file for the same path
       // may arrive during restore; switch to the existing tab instead of duping.
-      // ponytail: stale-buffer ceiling — if the file changed on disk since this
+      // ponytail: stale-buffer ceiling - if the file changed on disk since this
       // snapshot, the stale buffer wins. Upgrade to an mtime comparison if that bites.
       const existing = findTabByPath(coll, entry.path);
       if (existing) {
@@ -457,7 +457,7 @@ and replace with:
     }
 ```
 
-(`closeTabById` needs no change — on discard the tab is removed from `runtime` before the next `persistSessionNow()`, so it is naturally omitted.)
+(`closeTabById` needs no change - on discard the tab is removed from `runtime` before the next `persistSessionNow()`, so it is naturally omitted.)
 
 - [ ] **Step 3: Type-check and run the full suite**
 
@@ -465,7 +465,7 @@ Run: `npx tsc --noEmit`
 Expected: no errors (note `main.ts` already imports `findTabByPath` at the top).
 
 Run: `npm test`
-Expected: all green (no new unit tests here — the restore and discard paths live in the DOM/async app layer; they are covered by the manual smoke test in Task 6).
+Expected: all green (no new unit tests here - the restore and discard paths live in the DOM/async app layer; they are covered by the manual smoke test in Task 6).
 
 - [ ] **Step 4: Commit**
 
@@ -498,7 +498,7 @@ Expected: no TS errors; all vitest tests green.
 
 - [ ] **Step 2: Manual smoke checklist (run `npm run tauri dev`)**
 
-1. **Tab switch shows the right text (Bug 1):** open two `.md` files. Click each tab. The editor text matches the selected file; the preview matches too. Open a third non-`.md` file (`.txt`) and switch between all three — editor updates each time.
+1. **Tab switch shows the right text (Bug 1):** open two `.md` files. Click each tab. The editor text matches the selected file; the preview matches too. Open a third non-`.md` file (`.txt`) and switch between all three - editor updates each time.
 2. **No false dirty on open (Bug 2):** open a file and do not edit. The window title has no leading `*`; the tab shows no dirty dot. Repeat for a second file.
 3. **Edit still marks dirty:** type in a tab → `*` appears in the title and a dirty dot on the tab. Save (`Ctrl+S`) → clean again.
 4. **Discard on close (Bug 3):** edit a named file, then close the window. At the prompt choose "Don't Save." Reopen the app → the file is back to its on-disk content, not your edits (no ghost restore), and is clean.
@@ -507,7 +507,7 @@ Expected: no TS errors; all vitest tests green.
 
 - [ ] **Step 3: Report**
 
-Report exactly: the three commit hashes landed, `npm test` output summary, `cargo test` status, and which smoke steps passed. If any smoke step fails, do NOT mark done — escalate.
+Report exactly: the three commit hashes landed, `npm test` output summary, `cargo test` status, and which smoke steps passed. If any smoke step fails, do NOT mark done - escalate.
 
 ---
 
@@ -516,4 +516,4 @@ Report exactly: the three commit hashes landed, `npm test` output summary, `carg
 - **Spec coverage:** Bug 1 → Task 1; Bug 2 → Task 2; Bug 3 write path → Task 3, read path + discard → Task 4; backend safety → Task 5; verification → Task 6. All spec §4 items mapped.
 - **Placeholders:** none; every code step contains the exact code.
 - **Type consistency:** `programmatic` annotation defined in Task 2, referenced only there. `findTabByPath`, `createTab`, `appendAndActivate`, `switchToTab`, `DocMeta`, `askSave` all used with their existing signatures. `toSession`/`persistSessionNow`/`restoreSessionOrNew` changes agree on "dirty ⇒ text persisted and restored."
-- **Risk note:** Task 2's jsdom editor test is the only piece that depends on CodeMirror constructing cleanly under jsdom (it does in CM's own test suite). If construction throws in this environment, the executor may fall back to manual verification of Bug 2 and keep the test skipped with a `ponytail:` note — but try the test first.
+- **Risk note:** Task 2's jsdom editor test is the only piece that depends on CodeMirror constructing cleanly under jsdom (it does in CM's own test suite). If construction throws in this environment, the executor may fall back to manual verification of Bug 2 and keep the test skipped with a `ponytail:` note - but try the test first.

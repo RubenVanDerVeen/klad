@@ -1,4 +1,4 @@
-# Restore Session on File-Arg Launch — Design
+# Restore Session on File-Arg Launch - Design
 
 - **Date:** 2026-08-02
 - **Topic:** `restore-on-launch`
@@ -14,9 +14,9 @@ User intent (verbatim):
 
 > When klad isn't opened, and I open a file by double clicking, it doesn't open with all the unsaved untitled files, or with previously opened files. I want to be able to double click a file and it opens just as if I were to open klad by itself and open the double clicked file next to the other files.
 
-Concretely: when the OS launches klad with a double-clicked file as `argv[1]` (klad **not** already running), klad opens **only** that file and discards the saved session — unsaved untitled notes and previously-opened files from the last session do not come back. The user expects the double-clicked file to land **alongside** the restored session, exactly as if they had launched klad bare and then opened the file.
+Concretely: when the OS launches klad with a double-clicked file as `argv[1]` (klad **not** already running), klad opens **only** that file and discards the saved session - unsaved untitled notes and previously-opened files from the last session do not come back. The user expects the double-clicked file to land **alongside** the restored session, exactly as if they had launched klad bare and then opened the file.
 
-When klad **is** already running, the single-instance plugin forwards the path to the existing instance and the file opens as a new tab next to whatever is already there — this case already behaves the way the user wants. **Only the cold-start case is wrong.**
+When klad **is** already running, the single-instance plugin forwards the path to the existing instance and the file opens as a new tab next to whatever is already there - this case already behaves the way the user wants. **Only the cold-start case is wrong.**
 
 ## 2. Root cause (trace, not guesswork)
 
@@ -35,18 +35,18 @@ void (async () => {
 })();
 ```
 
-The `if (startupFile)` branch skips `restoreSessionOrNew()` whenever a file arg is present. So a cold-start with `argv[1] = foo.txt` opens only `foo.txt` — the entire saved session is ignored for that launch.
+The `if (startupFile)` branch skips `restoreSessionOrNew()` whenever a file arg is present. So a cold-start with `argv[1] = foo.txt` opens only `foo.txt` - the entire saved session is ignored for that launch.
 
 The rule was authored in the tabs spec §8 (2026-07-18) and intentionally preserved when hot-exit landed (2026-08-01). It was defensive against the "double-click file A → get A plus the saved session B/C/D surprise" when **multi-instance** was still the model: back then each OS-launched instance had its own localStorage view and last-writer-wins semantics, so restoring on every launch could surprise users with tabs they didn't ask for.
 
 **Two things have changed since the rule was written, both removing the original justification:**
 
 1. **Single-instance mode shipped** (`docs/artifacts/specs/single-instance/2026-07-18-single-instance-design.md`). There is now exactly one long-lived instance. A second OS launch is forwarded to the first via the `single-instance` event and the second process exits. The "multiple instances with divergent localStorage" scenario the rule protected against no longer exists.
-2. **Hot-exit shipped** (2026-08-01). Window close now silently stashes **every** dirty buffer (titled + untitled) to localStorage. So the skip-restore branch now throws away strictly more user work than it did when the rule was written — including unsaved untitled notes that the user explicitly expects to get back.
+2. **Hot-exit shipped** (2026-08-01). Window close now silently stashes **every** dirty buffer (titled + untitled) to localStorage. So the skip-restore branch now throws away strictly more user work than it did when the rule was written - including unsaved untitled notes that the user explicitly expects to get back.
 
 The "surprise" the rule was avoiding is no longer the dominant concern. Losing the user's unsaved work from the previous session is.
 
-## 3. Key realization — everything else already handles the combination
+## 3. Key realization - everything else already handles the combination
 
 Inverting the branch is safe because every adjacent subsystem already does the right thing for "restore **and** open the startup file":
 
@@ -54,9 +54,9 @@ Inverting the branch is safe because every adjacent subsystem already does the r
 - **Dedup covers the collision case for free.** If the saved session already contains the double-clicked file:
   - **Clean** in session → restore re-reads it from disk via `openPath(entry.path)` (`main.ts:489`); the subsequent `openPath(startupFile)` hits `findTabByPath(coll, path)` (`main.ts:293-297`) and just switches to the existing tab. No double-read, no duplicate.
   - **Dirty** in session (hot-exit stashed edits) → restore recreates it dirty from `entry.text` (`main.ts:469-486`); the subsequent `openPath(startupFile)` dedups to it. The user's unsaved edits win and are not lost.
-- **Untitled tabs cannot collide** (`path === null`, `findTabByPath` never matches — `tabs.ts:52-54`), so restored untitled notes never get deduped away.
+- **Untitled tabs cannot collide** (`path === null`, `findTabByPath` never matches - `tabs.ts:52-54`), so restored untitled notes never get deduped away.
 - **The single-instance listener stays correct.** It is registered before the first `await` (`main.ts:451`), so a forwarded file arriving mid-restore still lands via `openPath` and dedups against whatever restore has built so far. The comment at `main.ts:447-451` already documents this interleaving as safe.
-- **`appendAndActivate` always activates the last tab it touches**, so opening the startup file last makes it the active tab — which is the desired UX (you double-clicked foo.txt, you want to be looking at foo.txt).
+- **`appendAndActivate` always activates the last tab it touches**, so opening the startup file last makes it the active tab - which is the desired UX (you double-clicked foo.txt, you want to be looking at foo.txt).
 
 ## 4. Goals and non-goals
 
@@ -90,8 +90,8 @@ That is the entire code change. The new comment replaces the old "CLI file arg w
 ### Why this is safe (no data-loss regression)
 - The saved session is **restored**, not discarded. The user loses nothing they had before.
 - The startup file is **opened in addition**, never instead of. `openPath` is additive (pushes a tab) or neutral (dedups to existing). It never closes or overwrites a restored tab.
-- The hot-exit invariant (disk is never written on close; dirty buffers come back dirty) is untouched — restore semantics are not on this branch's path.
-- The forward (second-launch) path is untouched — no behavior change for the already-running case.
+- The hot-exit invariant (disk is never written on close; dirty buffers come back dirty) is untouched - restore semantics are not on this branch's path.
+- The forward (second-launch) path is untouched - no behavior change for the already-running case.
 
 ## 6. Behavior matrix (after the change)
 
@@ -102,30 +102,30 @@ That is the entire code change. The new comment replaces the old "CLI file arg w
 | Cold, no session, double-clicked file | no | yes | 1 fresh Untitled + startup file | startup file |
 | Cold, double-clicked file already in session (clean) | yes | yes (same path) | restored session; startup file deduped to its restored tab | startup file's tab |
 | Cold, double-clicked file already in session (dirty, hot-exit stashed) | yes | yes (same path) | restored session with the dirty buffer intact; startup file deduped to it | startup file's tab (dirty, edits preserved) |
-| Already running, double-clicked file (forward path) | n/a — session is live | forwarded via event | existing live tabs + forwarded file (deduped) | forwarded file |
+| Already running, double-clicked file (forward path) | n/a - session is live | forwarded via event | existing live tabs + forwarded file (deduped) | forwarded file |
 
 Row 4 and 5 are the collision cases; dedup makes them correct for free (see §3).
 
-Note on row 3 ("no session, double-clicked file"): the user gets `Untitled + foo.txt`. This matches the literal request — "as if I were to open klad by itself [→ 1 Untitled] and open the double clicked file next to the other files [→ Untitled + foo.txt]." If users find the spare Untitled noisy in practice, a future tightening can skip the fresh-Untitled creation when a startup file is present; **not built now** (YAGNI — wait for the complaint).
+Note on row 3 ("no session, double-clicked file"): the user gets `Untitled + foo.txt`. This matches the literal request - "as if I were to open klad by itself [→ 1 Untitled] and open the double clicked file next to the other files [→ Untitled + foo.txt]." If users find the spare Untitled noisy in practice, a future tightening can skip the fresh-Untitled creation when a startup file is present; **not built now** (YAGNI - wait for the complaint).
 
 ## 7. Testing strategy
 
 ### Why no new automated unit test
-The changed code is the startup IIFE in `main.ts`, which awaits Tauri IPC (`getStartupFile`) and mutates live `EditorView`s via `openPath` / `restoreSessionOrNew`. Per the project's established convention (tabs spec §12: "Pure-logic tests only. No Tauri IPC mocking, no CodeMirror mocking."), `main.ts` integration behavior is **not** unit-tested. The pure logic this branch depends on — `toSession` round-trips, `findTabByPath` dedup, `parseSession` clamping — is already covered by `src/__tests__/session.test.ts` (10 tests) and `src/__tests__/tabs.test.ts`. The bug was never in that logic.
+The changed code is the startup IIFE in `main.ts`, which awaits Tauri IPC (`getStartupFile`) and mutates live `EditorView`s via `openPath` / `restoreSessionOrNew`. Per the project's established convention (tabs spec §12: "Pure-logic tests only. No Tauri IPC mocking, no CodeMirror mocking."), `main.ts` integration behavior is **not** unit-tested. The pure logic this branch depends on - `toSession` round-trips, `findTabByPath` dedup, `parseSession` clamping - is already covered by `src/__tests__/session.test.ts` (10 tests) and `src/__tests__/tabs.test.ts`. The bug was never in that logic.
 
 The appropriate verification bar is the manual smoke test below + the existing automated suite staying green.
 
 ### Existing automated suite (must stay green, unchanged)
-- `npm test` — frontend vitest suite.
-- `npx tsc --noEmit` — typecheck clean.
-- `cargo test --manifest-path src-tauri/Cargo.toml` — backend tests (no Rust change; confirm no regression).
+- `npm test` - frontend vitest suite.
+- `npx tsc --noEmit` - typecheck clean.
+- `cargo test --manifest-path src-tauri/Cargo.toml` - backend tests (no Rust change; confirm no regression).
 
-### Manual smoke test (acceptance — the real "failing test" for this bug)
+### Manual smoke test (acceptance - the real "failing test" for this bug)
 Prep: clear `localStorage["klad-session"]` in devtools, then build the session to restore.
 
 1. **Untitled + file (the headline case):** `Ctrl+N` → type "note A" → close window (hot-exit stashes). Now in Explorer/Finder, double-click a real `foo.txt`. Klad cold-starts → tabs are `[Untitled(dirty, "note A"), foo.txt]`, **foo.txt active**. ✅
 2. **Previously opened file + new file:** Open `a.txt`, open `b.txt`, close window. Double-click `c.txt` in Explorer. Tabs: `[a.txt, b.txt, c.txt]`, c.txt active. ✅
-3. **Dirty named buffer preserved across a file launch:** Open `a.txt`, type "edited", close window (hot-exit stashes the dirty buffer). Double-click `a.txt` in Explorer. Tabs: `[a.txt(dirty, contains "edited")]`, a.txt active. **Disk unchanged** (verify mtime / `Get-Content`). ✅ — this is the collision-dirty case; dedup must not lose the stashed edits or re-read disk.
+3. **Dirty named buffer preserved across a file launch:** Open `a.txt`, type "edited", close window (hot-exit stashes the dirty buffer). Double-click `a.txt` in Explorer. Tabs: `[a.txt(dirty, contains "edited")]`, a.txt active. **Disk unchanged** (verify mtime / `Get-Content`). ✅ - this is the collision-dirty case; dedup must not lose the stashed edits or re-read disk.
 4. **Clean collision dedups:** Open `a.txt`, make no edits, close. Double-click `a.txt`. Tabs: `[a.txt]` (one tab, not two), a.txt active. ✅
 5. **No-session cold start still works (regression guard):** Clear localStorage, launch klad from Start menu (no file arg). One fresh Untitled tab. ✅
 6. **Already-running forward path unchanged (regression guard):** Launch klad bare, open a file, then double-click another file in Explorer. Second file opens as a new tab next to the first; no new instance spawns. ✅
@@ -174,7 +174,7 @@ Files actually modified: `src/main.ts` (1 branch), `docs/artifacts/specs/tabs/20
 | Collision with dirty buffer in session | Dedup; stashed edits win, disk untouched. |
 | Spare Untitled on no-session cold start | Kept (YAGNI); document the future tightening. |
 | New automated tests | None (integration handler; pure logic already covered). Verify via manual smoke + existing suite. |
-| Doc amendments | Yes — tabs §8 and hot-exit §5 must not contradict the new code. |
+| Doc amendments | Yes - tabs §8 and hot-exit §5 must not contradict the new code. |
 | Multi-file argv | Out of scope; unchanged YAGNI. |
 
 ## 12. Open issues

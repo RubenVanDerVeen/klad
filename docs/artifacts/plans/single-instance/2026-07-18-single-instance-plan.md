@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make a second OS-launched klad process forward its file argument(s) to the already-running first instance, open them as new tab(s) there, raise the first window, and exit — eliminating the multi-process `localStorage` last-writer-wins data-loss risk called out in the tabs/session spec §11.
+**Goal:** Make a second OS-launched klad process forward its file argument(s) to the already-running first instance, open them as new tab(s) there, raise the first window, and exit - eliminating the multi-process `localStorage` last-writer-wins data-loss risk called out in the tabs/session spec §11.
 
 **Architecture:** Add `tauri-plugin-single-instance` as the first entry in the Rust plugin chain. Its `init` callback emits a `single-instance` Tauri event carrying `{ argv, cwd }` to the `main` webview and raises the window; the second process exits inside the plugin. The frontend's existing `openPath(path)` is the consumer; a thin `listenOpenFile` wrapper in `src/fileio.ts` subscribes to the event, runs a pure `extractPaths` validator that skips `argv[0]`, and dispatches each forwarded path through `openPath` (whose existing dedup / error / session-save path does the rest). No new Tauri commands, no new npm deps.
 
@@ -14,7 +14,7 @@
 
 Copied verbatim from the spec and `AGENTS.md`:
 
-- **Branch:** `feat/tabs-and-session-restore` (already checked out at `65d48cb`). This plan lands on top of the tabs/session work that the spec's "Task 7" references — that work is already committed (`8f510ae`…`ea14fea`); this plan does not touch it.
+- **Branch:** `feat/tabs-and-session-restore` (already checked out at `65d48cb`). This plan lands on top of the tabs/session work that the spec's "Task 7" references - that work is already committed (`8f510ae`…`ea14fea`); this plan does not touch it.
 - **No new Tauri command.** Per spec §5/§7, the single-instance plugin uses an event callback, not `#[tauri::command]`. Therefore `invoke_handler![]` is unchanged and no `invoke()` wrapper is added. The only new `src/fileio.ts` exports are `extractPaths` and the `listenOpenFile` event-subscription wrapper.
 - **No new npm dependency.** `@tauri-apps/api/event` ships inside `@tauri-apps/api ^2.5.0` (already in `package.json`).
 - **Editor buffer is always LF-normalized.** Inherited; `openPath` already routes through `read_file` which normalizes CRLF/CR → `\n`.
@@ -49,7 +49,7 @@ Copied verbatim from the spec and `AGENTS.md`:
 
 ---
 
-## Task 1: Rust — register the single-instance plugin
+## Task 1: Rust - register the single-instance plugin
 
 **Files:**
 - Modify: `src-tauri/Cargo.toml`
@@ -58,7 +58,7 @@ Copied verbatim from the spec and `AGENTS.md`:
 
 **Interfaces:**
 - Consumes: `tauri-plugin-single-instance = "2"` (external Cargo crate).
-- Produces: emits a Tauri event named `"single-instance"` to the webview window labeled `"main"`, with payload `{ argv: string[]; cwd: string }`. Task 3's frontend listener subscribes to this exact event name and reads this exact payload shape — they are a contract across the IPC boundary.
+- Produces: emits a Tauri event named `"single-instance"` to the webview window labeled `"main"`, with payload `{ argv: string[]; cwd: string }`. Task 3's frontend listener subscribes to this exact event name and reads this exact payload shape - they are a contract across the IPC boundary.
 
 **Why this task is first:** The plugin must compile and register before the frontend has anything to listen to. Verifying it via `cargo build` and a dev smoke also validates the capabilities permissions before the frontend integration lands.
 
@@ -148,7 +148,7 @@ Edit `src-tauri/capabilities/default.json` to add the three `core:window:*` perm
 }
 ```
 
-Note (per spec §5): Tauri 2's ACL primarily gates webview-initiated `invoke` commands, so Rust-side `Window::set_focus()` / `show()` / `unminimize()` *may* not actually traverse this layer. If the Task 3 smoke test confirms the window raises correctly, these permissions are either required or harmless. Do **not** remove them in this plan without an explicit follow-up — the spec lists them.
+Note (per spec §5): Tauri 2's ACL primarily gates webview-initiated `invoke` commands, so Rust-side `Window::set_focus()` / `show()` / `unminimize()` *may* not actually traverse this layer. If the Task 3 smoke test confirms the window raises correctly, these permissions are either required or harmless. Do **not** remove them in this plan without an explicit follow-up - the spec lists them.
 
 - [ ] **Step 4: Verify the Rust side builds and existing tests pass**
 
@@ -179,11 +179,11 @@ capabilities the raise-window sequence relies on. No new Tauri commands.
 Spec: docs/artifacts/specs/single-instance/2026-07-18-single-instance-design.md"
 ```
 
-(`src-tauri/Cargo.lock` is tracked — verify with `git status` after staging; include it if changed.)
+(`src-tauri/Cargo.lock` is tracked - verify with `git status` after staging; include it if changed.)
 
 ---
 
-## Task 2: Frontend — pure `extractPaths` helper + tests
+## Task 2: Frontend - pure `extractPaths` helper + tests
 
 **Files:**
 - Modify: `src/fileio.ts`
@@ -193,7 +193,7 @@ Spec: docs/artifacts/specs/single-instance/2026-07-18-single-instance-design.md"
 - Consumes: nothing new.
 - Produces: `extractPaths(payload: unknown): string[]`, exported from `src/fileio.ts`. Task 3's `listenOpenFile` calls this inside its event handler.
 
-**Why this task is split out:** The argv validation ("is `argv` an array of strings? return `argv[1..]`") is the only pure logic in the whole feature. Extracting it as a named function lets us test it without mocking Tauri's event API — matching the project convention of "pure-logic tests only" (see `src/__tests__/session.test.ts` for the established style).
+**Why this task is split out:** The argv validation ("is `argv` an array of strings? return `argv[1..]`") is the only pure logic in the whole feature. Extracting it as a named function lets us test it without mocking Tauri's event API - matching the project convention of "pure-logic tests only" (see `src/__tests__/session.test.ts` for the established style).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -239,7 +239,7 @@ describe("extractPaths", () => {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npm test`
-Expected: FAIL — import error / `extractPaths` is not a function (it doesn't exist yet).
+Expected: FAIL - import error / `extractPaths` is not a function (it doesn't exist yet).
 
 - [ ] **Step 3: Implement `extractPaths` in `src/fileio.ts`**
 
@@ -266,7 +266,7 @@ export function extractPaths(payload: unknown): string[] {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `npm test`
-Expected: PASS — all six `extractPaths` cases green, plus the existing suites (`tabs`, `session`, `document`, `settings`, `render`, `debounce`) still green.
+Expected: PASS - all six `extractPaths` cases green, plus the existing suites (`tabs`, `session`, `document`, `settings`, `render`, `debounce`) still green.
 
 - [ ] **Step 5: Commit**
 
@@ -282,7 +282,7 @@ currently unused."
 
 ---
 
-## Task 3: Frontend — `listenOpenFile` wrapper + bootstrap wiring
+## Task 3: Frontend - `listenOpenFile` wrapper + bootstrap wiring
 
 **Files:**
 - Modify: `src/fileio.ts`
@@ -290,7 +290,7 @@ currently unused."
 
 **Interfaces:**
 - Consumes: `extractPaths` from Task 2; `listen` + `UnlistenFn` from `@tauri-apps/api/event`; the existing `openPath(path: string): Promise<void>` already defined in `src/main.ts`.
-- Produces: `listenOpenFile(handler: (path: string) => void): Promise<UnlistenFn>`, exported from `src/fileio.ts`. The event name `"single-instance"` and payload shape are fixed by Task 1's Rust `emit_to` call — they must match exactly.
+- Produces: `listenOpenFile(handler: (path: string) => void): Promise<UnlistenFn>`, exported from `src/fileio.ts`. The event name `"single-instance"` and payload shape are fixed by Task 1's Rust `emit_to` call - they must match exactly.
 
 **Why this task is last:** It depends on both Task 1 (the event being emitted) and Task 2 (the path-extraction helper). Its verification is a manual smoke test that exercises the full Rust→frontend chain end-to-end.
 
@@ -378,7 +378,7 @@ void (async () => {
 ```
 
 The two `void` operators are intentional:
-- Outer `void` on `listenOpenFile(...)` discards the registration `Promise<UnlistenFn>` — the listener lives for the lifetime of the process; we never unlisten.
+- Outer `void` on `listenOpenFile(...)` discards the registration `Promise<UnlistenFn>` - the listener lives for the lifetime of the process; we never unlisten.
 - Inner `void` on `openPath(p)` makes the arrow function body an expression statement; Tauri event handlers don't await their handlers, and the existing `openPath` already swallows its own errors via `showError`.
 
 - [ ] **Step 3: Build + unit-test verification**
@@ -393,43 +393,43 @@ Then:
 ```bash
 npm test
 ```
-Expected: all tests still pass — Task 2's `extractPaths` tests plus the existing suites.
+Expected: all tests still pass - Task 2's `extractPaths` tests plus the existing suites.
 
 - [ ] **Step 4: Manual smoke test (the integration gate)**
 
 Run `npm run tauri dev`. Wait for the klad window to open with one untitled tab, then exercise the chain from a second process. On Windows the easiest launcher is the dev binary itself; on Linux/Mac use the OS shell. Use the temp dir `C:\Users\ruben\AppData\Local\Temp\opencode` for smoke files (pre-approved for external access).
 
-**Sub-test 4a — second launch with a file arg (happy path):**
+**Sub-test 4a - second launch with a file arg (happy path):**
 1. Create `C:\Users\ruben\AppData\Local\Temp\opencode\smoke-a.txt` with some content.
 2. From a separate terminal, launch a second klad process pointing at it. On Windows: `cargo run --manifest-path src-tauri\Cargo.toml -- C:\Users\ruben\AppData\Local\Temp\opencode\smoke-a.txt` (quote the path if it contains spaces). Alternatively, double-click the file in Explorer if `.txt` is bound to klad.
 3. Verify: the **existing** klad window comes to the front (unminimize → show → focus), `smoke-a.txt` opens as a new tab, **no second window** appears.
 
-**Sub-test 4b — second launch with a different file:**
+**Sub-test 4b - second launch with a different file:**
 1. Create `C:\Users\ruben\AppData\Local\Temp\opencode\smoke-b.md` with markdown content.
 2. Launch a second process pointing at it.
 3. Verify: existing window raises again; `smoke-b.md` opens as a second new tab and the preview pane activates (markdown). Two named tabs now visible.
 
-**Sub-test 4c — second launch with no args:**
+**Sub-test 4c - second launch with no args:**
 1. Launch a second process with no argv (`cargo run --manifest-path src-tauri\Cargo.toml` with no trailing path).
 2. Verify: existing window raises; **no new tab** appears; no second window. (`extractPaths` returned `[]`, handler no-op'd.)
 
-**Sub-test 4d — second launch with already-open file (dedup):**
+**Sub-test 4d - second launch with already-open file (dedup):**
 1. Launch a second process pointing at `smoke-a.txt` again.
-2. Verify: existing window raises; the existing `smoke-a.txt` tab becomes active (no duplicate tab, no re-read prompt) — this is `openPath`'s `findTabByPath` dedup path.
+2. Verify: existing window raises; the existing `smoke-a.txt` tab becomes active (no duplicate tab, no re-read prompt) - this is `openPath`'s `findTabByPath` dedup path.
 
-**Sub-test 4e — second launch with a missing path:**
+**Sub-test 4e - second launch with a missing path:**
 1. Launch a second process pointing at a path that doesn't exist (e.g. `C:\nonexistent\ghost.txt`).
-2. Verify: existing window raises; a `showError` dialog appears reading "Could not open file: …" — this is `openPath`'s `catch (e)` branch; the listener itself didn't crash.
+2. Verify: existing window raises; a `showError` dialog appears reading "Could not open file: …" - this is `openPath`'s `catch (e)` branch; the listener itself didn't crash.
 
-**Sub-test 4f — second launch during shutdown prompt (known quirk, spec §6):**
+**Sub-test 4f - second launch during shutdown prompt (known quirk, spec §6):**
 1. In the running klad, dirty a tab, then initiate close (window X or menu Exit) so `onCloseRequested` fires and shows the `askSave` dialog.
 2. While the `askSave` dialog is up, launch a second process pointing at a new file.
-3. Verify: the new file's tab is visible alongside the dialog. Per spec §6 this is an accepted v1 quirk — Save/Discard destroys the new tab with the window; Cancel leaves the new tab open beside the resolved prompt. Document the observed behavior in the commit message if it deviates.
+3. Verify: the new file's tab is visible alongside the dialog. Per spec §6 this is an accepted v1 quirk - Save/Discard destroys the new tab with the window; Cancel leaves the new tab open beside the resolved prompt. Document the observed behavior in the commit message if it deviates.
 
-**Sub-test 4g — session survives the cycle:**
+**Sub-test 4g - session survives the cycle:**
 1. Quit klad cleanly (resolve any prompts).
 2. Re-launch `npm run tauri dev`.
-3. Verify: session restore brings back the named tabs from 4a/4b (`smoke-a.txt`, `smoke-b.md`) — confirms the single-writer `localStorage` discipline survived and there was no race with a second process on shutdown.
+3. Verify: session restore brings back the named tabs from 4a/4b (`smoke-a.txt`, `smoke-b.md`) - confirms the single-writer `localStorage` discipline survived and there was no race with a second process on shutdown.
 
 - [ ] **Step 5: Commit**
 
@@ -453,11 +453,11 @@ Spec: docs/artifacts/specs/single-instance/2026-07-18-single-instance-design.md"
 
 ## Verification summary (run before declaring the plan done)
 
-- `cd src-tauri && cargo build` — clean.
-- `cd src-tauri && cargo test` — all green (regression gate; no new Rust tests).
-- `npm run build` — clean.
-- `npm test` — all green (including new `extractPaths` tests).
-- Manual smoke 4a–4g above — behavior matches spec §6.
+- `cd src-tauri && cargo build` - clean.
+- `cd src-tauri && cargo test` - all green (regression gate; no new Rust tests).
+- `npm run build` - clean.
+- `npm test` - all green (including new `extractPaths` tests).
+- Manual smoke 4a–4g above - behavior matches spec §6.
 
 ## Catalog self-check (per AGENTS.md "Adding features")
 

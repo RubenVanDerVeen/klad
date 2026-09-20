@@ -1,4 +1,4 @@
-# Rich Markdown Preview — Design
+# Rich Markdown Preview - Design
 
 Date: 2026-09-18
 Status: Approved scope (full console flavor + image resolution)
@@ -7,18 +7,18 @@ Status: Approved scope (full console flavor + image resolution)
 
 Klad's Markdown preview gains the hermes-console Markdown flavor:
 
-1. **KaTeX math** — `$...$` inline, `$$...$$` block.
-2. **Mermaid diagrams** — ` ```mermaid ` fences.
-3. **Plots** — ` ```plot ` fences with the console's function-plot JSON syntax.
-4. **Columns** — ` ```columns ` fences split on `||` lines.
-5. **Image scaling** — `![alt](path){100%}` suffix syntax.
-6. **Relative image resolution** (pre-existing gap) — local images actually render.
+1. **KaTeX math** - `$...$` inline, `$$...$$` block.
+2. **Mermaid diagrams** - ` ```mermaid ` fences.
+3. **Plots** - ` ```plot ` fences with the console's function-plot JSON syntax.
+4. **Columns** - ` ```columns ` fences split on `||` lines.
+5. **Image scaling** - `![alt](path){100%}` suffix syntax.
+6. **Relative image resolution** (pre-existing gap) - local images actually render.
 
 A document written for the console must render identically in Klad.
 
 ## Reference implementation
 
-Port from `C:\Users\ruben\Projects\Hobby\hermes-console\frontend\src\lib\markdown.ts`, `plot.ts`, `mermaid.ts` (marked 18, katex 0.18 + marked-katex-extension, mermaid 11, function-plot 1.25, DOMPurify — same stack klad already uses for marked/dompurify).
+Port from `C:\Users\ruben\Projects\Hobby\hermes-console\frontend\src\lib\markdown.ts`, `plot.ts`, `mermaid.ts` (marked 18, katex 0.18 + marked-katex-extension, mermaid 11, function-plot 1.25, DOMPurify - same stack klad already uses for marked/dompurify).
 
 ## Non-goals
 
@@ -31,7 +31,7 @@ Port from `C:\Users\ruben\Projects\Hobby\hermes-console\frontend\src\lib\markdow
 ### Math (KaTeX)
 
 - `$$...$$` block via `marked-katex-extension` (inline rule stripped); `$...$` inline via custom extension with the console's pandoc-style guards: opening `$` not followed by whitespace; no newline/unescaped `$` inside; closing `$` not followed by a digit; pure amounts like `$100$` stay literal. `throwOnError: false`.
-- Delimiters `$`/`$$` only — no `\(...\)`.
+- Delimiters `$`/`$$` only - no `\(...\)`.
 
 ### Mermaid
 
@@ -58,7 +58,7 @@ Port from `C:\Users\ruben\Projects\Hobby\hermes-console\frontend\src\lib\markdow
 
 ```
 src/render.ts        marked.use(extensions) + DOMPurify (ADD_ATTR additions)
-                     renderMarkdown(text) — unchanged signature/behavior + rich hosts
+                     renderMarkdown(text) - unchanged signature/behavior + rich hosts
 src/rich-blocks.ts   NEW: mountRichBlocks(container) → mounts .mermaid and .plot
                      hosts (lazy imports, error fallbacks, mermaid theme observer)
 src/preview.ts       renderPreviewNow: innerHTML → resolveImages(pane, baseDir)
@@ -72,7 +72,7 @@ Key invariants:
 - **Sanitize-then-mount**: marked renderers emit only plain divs with escaped text + `data-src`; DOMPurify sanitize stays the last string-level step; mermaid/function-plot SVG mounts happen on live DOM afterwards. DOMPurify `ADD_ATTR: ["data-src", "data-size", "mathvariant", "stretchy", "encoding", "target"]` (verify each is exercised).
 - **KaTeX is the exception**: rendered to HTML string at parse time (like the console), surviving sanitize via allow-listed MathML attrs.
 - **Race safety**: mount work checks `node.isConnected` before committing rendered SVG into the host (a newer preview render may have replaced the DOM meanwhile). Debounce timing (150 ms) unchanged.
-- **Lazy loading**: mermaid and function-plot are dynamic imports only — first diagram/plot pays the cost, not app startup. Import failure = raw source stays visible.
+- **Lazy loading**: mermaid and function-plot are dynamic imports only - first diagram/plot pays the cost, not app startup. Import failure = raw source stays visible.
 
 ## Error handling
 

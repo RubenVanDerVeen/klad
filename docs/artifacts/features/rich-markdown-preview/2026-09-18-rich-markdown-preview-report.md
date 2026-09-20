@@ -1,9 +1,9 @@
-# Rich Markdown Preview — Execution Report
+# Rich Markdown Preview - Execution Report
 
 - **Date:** 2026-09-18
 - **Plan:** `docs/artifacts/features/rich-markdown-preview/2026-09-18-rich-markdown-preview-plan.md`
 - **Spec:** `docs/artifacts/features/rich-markdown-preview/2026-09-18-rich-markdown-preview-design.md`
-- **Status:** **PASS** — ready for human smoke-test + merge
+- **Status:** **PASS** - ready for human smoke-test + merge
 - **Branch:** `feat/rich-markdown-preview` (base `59eb008`, the v0.4.0 report commit on `main`)
 
 ## 1. Summary
@@ -12,7 +12,7 @@ The plan gave Klad's Markdown preview the hermes-console flavor: KaTeX math
 (`$...$` inline with pandoc-style guards, `$$...$$` block), Mermaid diagrams
 (` ```mermaid ` fences), interactive function plots ( ```plot fences,
 function-plot), two-column layouts ( ```columns fences split on `||`),
-image percent sizing (`{N%}` suffix), and — a pre-existing gap — relative
+image percent sizing (`{N%}` suffix), and - a pre-existing gap - relative
 image resolution against the open file via the Tauri asset protocol. The
 architecture held: marked extensions emit plain host divs (`data-src`
 pattern), DOMPurify stays the last string-level step, and heavy renders
@@ -25,13 +25,13 @@ new modules).
 
 Verification (all re-run at report time): `npm test` **12 files / 81 tests
 passed, 0 failed** (26 new tests vs the v0.4.0 baseline of 55); `npm run
-build` green (12.98 s, chunk-size warnings only — mermaid 597 kB and katex
+build` green (12.98 s, chunk-size warnings only - mermaid 597 kB and katex
 261 kB land as separate lazy chunks, confirming the dynamic-import design);
 `cd src-tauri && cargo test` **15 passed / 0 failed**.
 
 ## 2. Per-task summary
 
-### Task 1 — KaTeX math (`$...$` inline, `$$...$$` block)
+### Task 1 - KaTeX math (`$...$` inline, `$$...$$` block)
 
 - **Commit:** `9572767` `feat(preview): render inline and block math with KaTeX`
 - **Files:** `package.json`, `package-lock.json` (+katex ^0.18.7,
@@ -40,12 +40,12 @@ build` green (12.98 s, chunk-size warnings only — mermaid 597 kB and katex
 - **Tests:** +4 (`renders inline math`, `renders block math`, `keeps pure
   currency amounts literal`, `renders math glued to prose`); full suite green.
 - **Reviewer verdict:** PASS.
-- **Deviations:** no `@types/katex` (katex 0.18.7 ships its own types — the
+- **Deviations:** no `@types/katex` (katex 0.18.7 ships its own types - the
   plan made this conditional); marked-katex-extension ^5 peer-accepts marked
   15, so the plan's fallback branch was never needed; one-line type cast in
   the inline-rule filter (see Deviations table).
 
-### Task 2 — Host extensions: mermaid, plot, columns, image `{N%}`
+### Task 2 - Host extensions: mermaid, plot, columns, image `{N%}`
 
 - **Commit:** `ad3522d` `feat(preview): emit mermaid, plot, columns hosts and sized images`
 - **Files:** `src/render.ts` (+95), `src/__tests__/render.test.ts` (+47).
@@ -57,7 +57,7 @@ build` green (12.98 s, chunk-size warnings only — mermaid 597 kB and katex
 - **Reviewer verdict:** PASS.
 - **Deviations:** none.
 
-### Task 3 — Rich-block mounting (`src/rich-blocks.ts`) + preview CSS
+### Task 3 - Rich-block mounting (`src/rich-blocks.ts`) + preview CSS
 
 - **Commit:** `8408e23` `feat(preview): mount mermaid diagrams and function plots after sanitize`
 - **Files:** `package.json`, `package-lock.json` (+mermaid ^11.17.2,
@@ -70,7 +70,7 @@ build` green (12.98 s, chunk-size warnings only — mermaid 597 kB and katex
 - **Reviewer verdict:** PASS.
 - **Deviations:** none.
 
-### Task 4 — Image resolution (`src/images.ts` + asset protocol)
+### Task 4 - Image resolution (`src/images.ts` + asset protocol)
 
 - **Commit:** `c355bab` `feat(preview): resolve relative images via the asset protocol`
 - **Files:** `src/images.ts` (new, 30 lines), `src/__tests__/images.test.ts`
@@ -79,16 +79,16 @@ build` green (12.98 s, chunk-size warnings only — mermaid 597 kB and katex
   existing `tauri` dep), `src-tauri/Cargo.lock`.
 - **Tests:** +6 (dirName splits windows/posix paths; rewrites relative paths
   against baseDir; passes absolute urls/schemes through untouched; no-op
-  without base dir ×2 — src and DOM-container levels); full suite green;
+  without base dir ×2 - src and DOM-container levels); full suite green;
   `cargo test` still 15/15 (catches tauri.conf schema typos early).
 - **Reviewer verdict:** PASS.
-- **Deviations:** three, all recorded in the commit body — see the table
+- **Deviations:** three, all recorded in the commit body - see the table
   below. The notable one: `src-tauri/capabilities/default.json` is unchanged
   because Tauri 2.11.5 has no `asset:*` capability permission at all; the
   asset protocol is gated purely by `app.security.assetProtocol` plus the
   Cargo feature.
 
-### Task 5 — Preview wiring (base dir + mount calls)
+### Task 5 - Preview wiring (base dir + mount calls)
 
 - **Commit:** `d3c79a0` `feat(preview): wire rich blocks and image resolution into live render`
 - **Files:** `src/preview.ts` (+13: `setPreviewBaseDir` state + md-render
@@ -100,14 +100,14 @@ build` green (12.98 s, chunk-size warnings only — mermaid 597 kB and katex
 - **Reviewer verdict:** PASS.
 - **Deviations:** none.
 
-### Task 6 — Docs, catalogs, full verification
+### Task 6 - Docs, catalogs, full verification
 
 - **Commit:** `62cf4bd` `docs: describe rich markdown preview additions`
 - **Files:** `README.md` (preview bullet extended with the six additions),
   `CHANGELOG.md` (`[Unreleased] → Added` entry).
 - **Tests:** none (docs only); full verification matrix green (Section 4).
 - **Reviewer verdict:** PASS.
-- **Deviations:** none. Manual smoke (Step 4) deferred to the human — see
+- **Deviations:** none. Manual smoke (Step 4) deferred to the human - see
   Section 6.
 
 ### Spec/plan docs commit
@@ -122,12 +122,12 @@ build` green (12.98 s, chunk-size warnings only — mermaid 597 kB and katex
 |---|---|---|---|
 | 1 | `@types/katex` not added | katex 0.18.7 ships its own types (`types/katex.d.ts`); the plan's step was conditional on types being absent | None |
 | 1 | One-line cast `(e as { level?: string }).level` when filtering marked-katex's inline rule | Plan's verbatim `e.level !== "inline"` fails typecheck: the `TokenizerAndRendererExtension` union includes `RendererExtension`, which has no `level` field | None (type-level only, behavior unchanged) |
-| 4 | `capabilities/default.json` left unchanged (plan said add `"asset:default"`) | Tauri 2.11.5 has no `asset:*` capability permission — the build script rejects the identifier; the protocol is gated by `security.assetProtocol` config alone | Low — see Risks; runtime confirmation pending in human smoke |
-| 4 | `Cargo.toml` gained `protocol-asset` feature on the existing `tauri` dep (file not in the plan's Task 4 list) | tauri's build script enforces the feature when `assetProtocol` is enabled | None — catalog updated in the same change |
-| 4 | `resolveImageSrc` normalizes internal backslashes to `/` | The plan's verbatim code left them, but the plan's own test expects `asset:.../sub/pic.png` from `sub\pic.png`; one-line fix, marked `ponytail:` | None — ceiling noted in the comment (switch to `URL` if percent-encoding or UNC paths matter) |
+| 4 | `capabilities/default.json` left unchanged (plan said add `"asset:default"`) | Tauri 2.11.5 has no `asset:*` capability permission - the build script rejects the identifier; the protocol is gated by `security.assetProtocol` config alone | Low - see Risks; runtime confirmation pending in human smoke |
+| 4 | `Cargo.toml` gained `protocol-asset` feature on the existing `tauri` dep (file not in the plan's Task 4 list) | tauri's build script enforces the feature when `assetProtocol` is enabled | None - catalog updated in the same change |
+| 4 | `resolveImageSrc` normalizes internal backslashes to `/` | The plan's verbatim code left them, but the plan's own test expects `asset:.../sub/pic.png` from `sub\pic.png`; one-line fix, marked `ponytail:` | None - ceiling noted in the comment (switch to `URL` if percent-encoding or UNC paths matter) |
 
 Non-deviation worth noting: marked-katex-extension resolved to `^5.1.13`
-(plan pinned `^5.1.12`) — within the caret range, and its peer range accepts
+(plan pinned `^5.1.12`) - within the caret range, and its peer range accepts
 marked 15, so the plan's fallback ("newest major that accepts marked 15")
 was never exercised.
 
@@ -137,7 +137,7 @@ was never exercised.
 |---|---|---|
 | `npm test` | **81 passed / 0 failed** (12 files) | 26 new tests: render.test.ts 6→18, rich-blocks.test.ts +6, images.test.ts +6, preview-images.test.ts +2. Baseline at `59eb008` was 55 tests / 9 files |
 | `npm run build` | **Green** | `✓ built in 12.98s`; tsc clean. Chunk-size warnings only; mermaid (597 kB) and katex (261 kB) ship as separate lazy chunks, confirming the dynamic-import design |
-| `cd src-tauri && cargo test` | **15 passed / 0 failed** | `test result: ok. 15 passed; 0 failed; 0 ignored` — unchanged count (backend config-only change) |
+| `cd src-tauri && cargo test` | **15 passed / 0 failed** | `test result: ok. 15 passed; 0 failed; 0 ignored` - unchanged count (backend config-only change) |
 
 All three re-run at report time on the branch head.
 
@@ -146,7 +146,7 @@ All three re-run at report time on the branch head.
 | Catalog | Status | Detail |
 |---|---|---|
 | `package.json` | ✓ | `katex ^0.18.7`, `marked-katex-extension ^5.1.13`, `mermaid ^11.17.2`, `function-plot ^1.25.4` |
-| `src-tauri/Cargo.toml` | ✓ | `tauri` dep gained `protocol-asset` feature — deviation from the plan's listed files but required by the build script when assetProtocol is enabled |
+| `src-tauri/Cargo.toml` | ✓ | `tauri` dep gained `protocol-asset` feature - deviation from the plan's listed files but required by the build script when assetProtocol is enabled |
 | `src-tauri/tauri.conf.json` | ✓ | `security.assetProtocol`: enabled, image-extension-only scope |
 | `src-tauri/capabilities/default.json` | ⚠ unchanged (intentional) | Tauri 2.11.5 has no `asset:*` permission; build-script acceptance verified the config is sufficient |
 | `src-tauri/src/main.rs` | ✓ unchanged | No new Tauri commands |
@@ -195,14 +195,14 @@ hook"). None of them block merge.
 
 ## Skills loaded
 
-- `subagent-driven-development` — mandated by the plan header; drove the
+- `subagent-driven-development` - mandated by the plan header; drove the
   task-by-task executor/reviewer dispatch.
-- `ponytail` — active throughout (session mode); visible in the
+- `ponytail` - active throughout (session mode); visible in the
   smallest-diff decisions (single-line fixes, `ponytail:` markers with
   ceilings named).
-- `code-standardization` — loaded by the code-standardizer for the post-plan
+- `code-standardization` - loaded by the code-standardizer for the post-plan
   diff audit (findings in Section 7).
-- `verification-before-completion` — enforced by reviewers during execution
+- `verification-before-completion` - enforced by reviewers during execution
   and by the documenter: the full verification matrix (Section 4) was re-run
   on the branch head before this report was written.
 
@@ -210,7 +210,7 @@ hook"). None of them block merge.
 
 Exactly one new marker, both deliberate and ceiling-named:
 
-- `src/images.ts:17` — internal-backslash normalization for Windows-relative
+- `src/images.ts:17` - internal-backslash normalization for Windows-relative
   image refs; upgrade path: switch to `URL` if percent-encoding or UNC paths
   matter.
 
@@ -221,7 +221,7 @@ Exactly one new marker, both deliberate and ceiling-named:
 1. **Tauri asset protocol permission identifier not exercised at runtime.**
    The config path (no `asset:*` capability, `security.assetProtocol` +
    `protocol-asset` Cargo feature) is verified only via build-script
-   acceptance — no dev session has rendered a real image through it yet.
+   acceptance - no dev session has rendered a real image through it yet.
    *Mitigation:* the human smoke test must confirm an image next to an
    opened `.md` file actually displays.
 2. **Mermaid `-->` source mXSS guard fallback.** DOMPurify strips
@@ -236,7 +236,7 @@ Exactly one new marker, both deliberate and ceiling-named:
 Everything still needing the human smoke run (Section 6): mermaid SVG
 output, plot pan/zoom and visual proportion, image visual proportion,
 relative image byte-serving in the real WebView, and theme-flip axis
-re-color — plus risk 2's `-->` diagram. No automated check remains red.
+re-color - plus risk 2's `-->` diagram. No automated check remains red.
 
 ## 9. Verdict
 
@@ -257,4 +257,4 @@ green, no catalog drift. The branch is ready for human smoke-test + merge.
 | Task 6 | executor + reviewer | PASS (manual smoke deferred to human) |
 | Spec/plan | executor | `a165e4c` landed |
 | Code audit | code-standardizer | 3 repo-wide quick-fixes deferred (Section 7) |
-| Report | documenter (this report) | — |
+| Report | documenter (this report) | - |

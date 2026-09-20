@@ -1,4 +1,4 @@
-# Tabs and Session Restore — Design
+# Tabs and Session Restore - Design
 
 - **Date:** 2026-07-18
 - **Topic:** `tabs`
@@ -12,8 +12,8 @@ Klad today holds exactly one document. `let meta: DocMeta` (one metadata object)
 
 Two capabilities are added together:
 
-1. **Multiple tabs** — one tab per open file, VS Code-style (per-tab label, dirty dot, close button, `+` to add a tab).
-2. **Session restore** — after closing klad, reopening it brings back the same files plus any unsaved untitled buffers.
+1. **Multiple tabs** - one tab per open file, VS Code-style (per-tab label, dirty dot, close button, `+` to add a tab).
+2. **Session restore** - after closing klad, reopening it brings back the same files plus any unsaved untitled buffers.
 
 ## 2. Goals and non-goals
 
@@ -32,7 +32,7 @@ Two capabilities are added together:
 - **Single-instance mode.** A second OS-launched klad process is a separate instance with its own localStorage. See §11 known limitations.
 - **Drag-reorder of tabs.** Open-order only.
 - **Drag-drop files onto the window.** No drag-drop infrastructure exists today; adding it is independent scope.
-- **Per-tab cursor position / scroll restore.** Named files reopen at top-of-file; untitled buffers restore text but not caret. (Each tab's own `EditorView` *does* keep caret/scroll/undo alive for the duration of a session — this exclusion is only about *cross-restart* restore.)
+- **Per-tab cursor position / scroll restore.** Named files reopen at top-of-file; untitled buffers restore text but not caret. (Each tab's own `EditorView` *does* keep caret/scroll/undo alive for the duration of a session - this exclusion is only about *cross-restart* restore.)
 - **Tab pinning, splitting, or grouping.**
 - **"Recently closed" / reopen-closed-tab.**
 - **Reopen-of-saved-file should re-read from disk vs. keep buffer.** Out of scope; on restart we re-read named files from disk (so external edits are picked up), untitled buffers come from localStorage verbatim.
@@ -49,9 +49,9 @@ Two capabilities are added together:
 
 ## 4. Architecture decision
 
-**Approach A — one EditorView per tab.** Each tab owns a live CodeMirror `EditorView`; all are children of `#editor`, only the active one is visible (`hidden` attribute on the others). Chosen over shared-view-with-state-swap because:
+**Approach A - one EditorView per tab.** Each tab owns a live CodeMirror `EditorView`; all are children of `#editor`, only the active one is visible (`hidden` attribute on the others). Chosen over shared-view-with-state-swap because:
 
-- Undo history, cursor, scroll, and folds survive tab switches for free — no separate caching of `scrollDOM.scrollTop` (which `EditorState` does not carry).
+- Undo history, cursor, scroll, and folds survive tab switches for free - no separate caching of `scrollDOM.scrollTop` (which `EditorState` does not carry).
 - The current single-view code has a latent bug already: `setText` (a `changes` dispatch) doesn't reset undo history, so opening a second file can undo back into the first. Per-tab views make this moot.
 - Cost is more DOM nodes and memory. At klad's scale (typically <20 tabs of plain text) this is irrelevant.
 - Diff size is comparable to the shared-view approach, and correctness is higher.
@@ -60,7 +60,7 @@ Switching tabs is therefore **hide outgoing view → update `meta` and push to s
 
 ## 5. Data model
 
-### Pure logic — `src/tabs.ts` (new)
+### Pure logic - `src/tabs.ts` (new)
 
 Holds no `EditorView` (testable without CodeMirror, mirroring `document.ts` + `settings.ts` convention):
 
@@ -89,7 +89,7 @@ export function genId(): string;                                               /
 
 **Close-tab active-selection rule:** after closing the active tab, the *next* sibling becomes active; if the closed tab was last, the *previous* sibling becomes active; if no siblings remain, the collection is empty (`activeId: null`) and the orchestrator immediately creates a fresh untitled tab so the editor is never empty.
 
-### Persistence shape — `src/session.ts` (new)
+### Persistence shape - `src/session.ts` (new)
 
 ```ts
 export interface SessionEntry {
@@ -119,7 +119,7 @@ export function clearSession(): void;                                // write em
 
 Defensive parse rules: reject non-object, non-array `entries`, non-number `activeIndex`, wrong-typed fields, entries missing `encoding`/`eol`. Clamp `activeIndex` to `[0, entries.length - 1]`. Drop entries whose `path` is null AND `text` is missing (clean untitled tabs were never worth saving). On any structural problem with the top-level object, return `null` (treat as no session).
 
-### Runtime — `src/main.ts` (modified)
+### Runtime - `src/main.ts` (modified)
 
 ```ts
 interface RuntimeTab extends TabState {
@@ -131,7 +131,7 @@ let runtime: RuntimeTab[];        // same order as coll.tabs; carries the views
 function activeTab(): RuntimeTab; // runtime.find(t => t.id === coll.activeId)
 ```
 
-The `DocMeta` in `coll.tabs[i].meta` and the `meta` singleton used by status-bar/title code is the **same reference** for the active tab — i.e. we keep `let meta: DocMeta` as an alias of `activeTab().meta`, reassigned on every switch. This minimizes the diff to existing push-driven code (status bar, preview, title all keep reading `meta`).
+The `DocMeta` in `coll.tabs[i].meta` and the `meta` singleton used by status-bar/title code is the **same reference** for the active tab - i.e. we keep `let meta: DocMeta` as an alias of `activeTab().meta`, reassigned on every switch. This minimizes the diff to existing push-driven code (status bar, preview, title all keep reading `meta`).
 
 ## 6. Module structure
 
@@ -153,17 +153,17 @@ The `DocMeta` in `coll.tabs[i].meta` and the `meta` singleton used by status-bar
 | `src/styles.css` | Add `#tabbar`, `.tab`, `.tab.active`, `.tab.dirty`, `.tab-close`, `#new-tab` rules. Match klad's **light** theme (the dark screenshot was VS Code, not klad). |
 | `src/main.ts` | Replace single-`view` orchestration with `runtime: RuntimeTab[]` + `coll`. Replace `loadIntoEditor` with `switchToTab(id)`, `openPath` with dedup-or-create logic, `onCloseRequested` with dirty-tab walk, `doNew`/`doOpen`/`doSave`/`doSaveAs` to operate on active tab. Add session save hooks. Add keyboard listeners for `Ctrl+W` / `Ctrl+Tab` / `Ctrl+Shift+Tab`. |
 | `src/menu.ts` | Add `closeTab`, `nextTab`, `prevTab` to `MenuActions`. Wire File > Close Tab (`Ctrl+W`). Wire a new "Tabs" submenu or place Next/Prev Tab items under View. (Detail in §9.) |
-| `src/editor.ts` | No API change. Reused one-per-tab. (Optional: add a `destroyEditor(view)` thin wrapper around `view.destroy()` to centralize teardown — only if the call site reads unclear without it. YAGNI default: just call `view.destroy()` directly in `main.ts`.) |
+| `src/editor.ts` | No API change. Reused one-per-tab. (Optional: add a `destroyEditor(view)` thin wrapper around `view.destroy()` to centralize teardown - only if the call site reads unclear without it. YAGNI default: just call `view.destroy()` directly in `main.ts`.) |
 | `src/document.ts` | No change. Reused as-is. |
 
 ### Untouched (called out because AGENTS.md catalogs them)
 
-- `src-tauri/src/main.rs` `invoke_handler![]` — no new commands.
-- `src-tauri/src/fs_cmds.rs` — unchanged.
-- `src/fileio.ts` — unchanged (`readFile`, `saveFile`, `getStartupFile` all reused as-is).
-- `src-tauri/tauri.conf.json` `bundle.fileAssociations` — unchanged.
-- `src-tauri/capabilities/default.json` — unchanged.
-- `package.json` / `src-tauri/Cargo.toml` — no new deps.
+- `src-tauri/src/main.rs` `invoke_handler![]` - no new commands.
+- `src-tauri/src/fs_cmds.rs` - unchanged.
+- `src/fileio.ts` - unchanged (`readFile`, `saveFile`, `getStartupFile` all reused as-is).
+- `src-tauri/tauri.conf.json` `bundle.fileAssociations` - unchanged.
+- `src-tauri/capabilities/default.json` - unchanged.
+- `package.json` / `src-tauri/Cargo.toml` - no new deps.
 
 ## 7. UI design
 
@@ -200,7 +200,7 @@ The `DocMeta` in `coll.tabs[i].meta` and the `meta` singleton used by status-bar
 
 ### Tab bar API (`src/tabbar.ts`)
 
-Mirrors `statusbar.ts` shape — push-driven from `main.ts`:
+Mirrors `statusbar.ts` shape - push-driven from `main.ts`:
 
 ```ts
 export interface TabBarHooks {
@@ -226,7 +226,7 @@ Behavior:
 - Click `.tab-close` → `onClose(id)`.
 - Click `#new-tab` → `onNew()`.
 - Middle-click on `.tab` → `onClose(id)`.
-- The dirty dot is shown/hidden via a `data-dirty="true"` attribute on `.tab`, which CSS keys off — no DOM add/remove churn.
+- The dirty dot is shown/hidden via a `data-dirty="true"` attribute on `.tab`, which CSS keys off - no DOM add/remove churn.
 
 ### Styling (light theme, not the dark screenshot)
 
@@ -287,7 +287,7 @@ Grounded in existing klad tokens: `#d0d0d0` borders, `#444` text, white surfaces
 
 `doNew()`:
 1. Create `RuntimeTab` with `newDoc()` (untitled, empty), append, switch.
-2. No longer calls `confirmDiscard` first — a new tab doesn't disturb the existing one. (Old behavior of prompting before New was a single-doc constraint; with tabs it's not needed.)
+2. No longer calls `confirmDiscard` first - a new tab doesn't disturb the existing one. (Old behavior of prompting before New was a single-doc constraint; with tabs it's not needed.)
 
 ### Tab close
 
@@ -297,7 +297,7 @@ Grounded in existing klad tokens: `#d0d0d0` borders, `#444` text, white surfaces
    - Don't Save → proceed to remove.
    - Save → `doSave()` first; if save is itself cancelled (Save As dialog dismissed), abort.
 2. `view.destroy()` for the outgoing tab.
-3. `coll = closeTab(coll, id)` (pure reducer picks new active — next sibling, then previous, then empty).
+3. `coll = closeTab(coll, id)` (pure reducer picks new active - next sibling, then previous, then empty).
 4. If `coll.tabs` is now empty, immediately create a fresh untitled tab (klad is never empty-editor).
 5. `renderTabs`, focus active view, persist session.
 
@@ -312,13 +312,13 @@ Grounded in existing klad tokens: `#d0d0d0` borders, `#444` text, white surfaces
 6. `refreshTitle()`.
 7. `applyPreviewMode()` (reads new `meta.path` to decide visibility, renders `getText(activeView)` if visible).
 8. Show incoming `view.dom`, `view.focus()`.
-9. Persist session (only the `activeIndex` changed — cheap write, still debounced).
+9. Persist session (only the `activeIndex` changed - cheap write, still debounced).
 
 ### Dirty indicator and title
 
 - The per-tab dirty dot reflects the tab's own `meta.dirty`.
 - The window title keeps the existing `*` prefix for the active tab only.
-- `onDocChanged` callback (created per view at `createEditor` time) must close over the **owning tab's** `meta`, not the active-tab singleton — otherwise typing in a background tab would set the active tab's dirty flag. Each view's `onDocChanged` does:
+- `onDocChanged` callback (created per view at `createEditor` time) must close over the **owning tab's** `meta`, not the active-tab singleton - otherwise typing in a background tab would set the active tab's dirty flag. Each view's `onDocChanged` does:
   ```ts
   owner.meta.dirty = true;
   if (owner.id === coll.activeId) {
@@ -331,7 +331,7 @@ Grounded in existing klad tokens: `#d0d0d0` borders, `#444` text, white surfaces
 
 ### Save / Save As
 
-`doSave()` and `doSaveAs()` operate on the active tab. They already read/write `meta.path`, `meta.dirty`, and `getText(view)` — these become `getText(activeTab().view)` and the rebound `meta`. On successful Save As (path changes), `applyPreviewMode()` must be re-run because the markdown-ness can change with the extension. After any save, `renderTabs()` is called to clear the dirty dot.
+`doSave()` and `doSaveAs()` operate on the active tab. They already read/write `meta.path`, `meta.dirty`, and `getText(view)` - these become `getText(activeTab().view)` and the rebound `meta`. On successful Save As (path changes), `applyPreviewMode()` must be re-run because the markdown-ness can change with the extension. After any save, `renderTabs()` is called to clear the dirty dot.
 
 ### Multi-instance (non-goal, but documented behavior)
 
@@ -403,12 +403,12 @@ Submenu "Tabs"
      doNew()                           // single untitled tab
 4. startupFile = await getStartupFile()
      if (startupFile) openPath(startupFile)    // overrides session per §8 rule
-                                                // NOTE: this is order-sensitive — see Open Issue R1
+                                                // NOTE: this is order-sensitive - see Open Issue R1
 5. setupMenu(...)                      // unchanged items + new Tabs submenu
 6. renderTabs(toTabViews())            // initial paint
 ```
 
-**R1 — startup ordering.** Step 4 ("CLI file wins, skip session restore") has to be decided *before* step 3 runs, otherwise we restore the session and then pile the CLI file on top. Fix: **invert the check** — call `getStartupFile()` first, branch on whether it returns a path. The plan reflects this corrected order:
+**R1 - startup ordering.** Step 4 ("CLI file wins, skip session restore") has to be decided *before* step 3 runs, otherwise we restore the session and then pile the CLI file on top. Fix: **invert the check** - call `getStartupFile()` first, branch on whether it returns a path. The plan reflects this corrected order:
 
 ```
 1. loadSettings, initStatusBar
@@ -442,7 +442,7 @@ After shutdown completes, `appWindow.destroy()` tears down the webview; localSto
 
 ### When the last tab is closed
 
-Per §8 "Tab close," closing the last tab creates a fresh untitled tab immediately — klad is never in an empty-editor state. Therefore the shutdown loop above only runs when the user invokes Exit / closes the window; it never runs just because the last open tab was closed.
+Per §8 "Tab close," closing the last tab creates a fresh untitled tab immediately - klad is never in an empty-editor state. Therefore the shutdown loop above only runs when the user invokes Exit / closes the window; it never runs just because the last open tab was closed.
 
 ## 11. Known limitations / future work
 
@@ -512,7 +512,7 @@ No red flags: no new Tauri command exists whose frontend call could be missing; 
 
 | Decision | Resolution |
 |---|---|
-| Tab engine architecture | Approach A — one `EditorView` per tab. |
+| Tab engine architecture | Approach A - one `EditorView` per tab. |
 | Session restore scope | Named files + dirty untitled buffers (text persisted). |
 | Reopen of open file | Switch to existing tab, no duplicate. |
 | Last-tab close | Immediately create a fresh untitled tab; editor never empty. |

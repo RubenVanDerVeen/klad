@@ -1,23 +1,23 @@
-# Typst Single-File Live Preview — Implementation Plan
+# Typst Single-File Live Preview - Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Open a `.typ`/`.typst` file in klad and see live typst-rendered pages in the preview pane, debounced on keystroke, alongside the existing Markdown preview.
 
-**Architecture:** One new Tauri command `compile_typst(text) -> { pages: Vec<String-svg>, errors }` backed by a `SingleFileWorld` impl of typst's `World` trait (source from text, fonts embedded via `typst-assets`, all file/package lookups return errors). The existing `src/preview.ts` module learns a `previewKind: 'md' | 'typ'` state set by `applyPreviewMode()` in `main.ts`; on `'typ'` it fires a race-guarded async compile (monotonic render token) and stacks per-page SVGs, keeping last-good + showing an error banner on failure. No folder/project model, no `#include`/`#import` resolution, no `@preview` packages, no system fonts, no PDF export — those are a separate spec.
+**Architecture:** One new Tauri command `compile_typst(text) -> { pages: Vec<String-svg>, errors }` backed by a `SingleFileWorld` impl of typst's `World` trait (source from text, fonts embedded via `typst-assets`, all file/package lookups return errors). The existing `src/preview.ts` module learns a `previewKind: 'md' | 'typ'` state set by `applyPreviewMode()` in `main.ts`; on `'typ'` it fires a race-guarded async compile (monotonic render token) and stacks per-page SVGs, keeping last-good + showing an error banner on failure. No folder/project model, no `#include`/`#import` resolution, no `@preview` packages, no system fonts, no PDF export - those are a separate spec.
 
 **Tech Stack:** Rust 2021 (`typst`, `typst-assets`), Tauri 2 (`#[tauri::command]` + `invoke`), vanilla TypeScript, vitest, cargo.
 
-**Spec:** `docs/artifacts/specs/typst/2026-08-10-typst-single-file-preview-design.md` (read this first — it contains the four resolved brainstorm forks, the typst-vs-markdown delta table, the exact command/frontend contracts, the behavior matrix, the catalog-update table with the "no new permission" call-out, and the deferred-to-folder-mode list).
+**Spec:** `docs/artifacts/specs/typst/2026-08-10-typst-single-file-preview-design.md` (read this first - it contains the four resolved brainstorm forks, the typst-vs-markdown delta table, the exact command/frontend contracts, the behavior matrix, the catalog-update table with the "no new permission" call-out, and the deferred-to-folder-mode list).
 
 ## Global Constraints
 
-- **OS:** Windows + Linux. Editor buffer is always LF-normalized before reaching typst (AGENTS.md) — `SingleFileWorld::new(text)` can assume `\n`-only input.
-- **No new `capabilities/default.json` permission** — `compile_typst` is compute-only (String in, strings out, no fs scope). If the implementer thinks one is needed, stop and re-check (spec §6).
+- **OS:** Windows + Linux. Editor buffer is always LF-normalized before reaching typst (AGENTS.md) - `SingleFileWorld::new(text)` can assume `\n`-only input.
+- **No new `capabilities/default.json` permission** - `compile_typst` is compute-only (String in, strings out, no fs scope). If the implementer thinks one is needed, stop and re-check (spec §6).
 - **typst version pin:** The `typst` crate's `World` trait + SVG emission API has shifted between minor versions. Task 1 Step 1 resolves and records the latest stable versions; Task 1 Step 2 reads the actual trait/API for those versions before writing any code. Do not pin to a version older than the latest stable without a recorded reason.
-- **v1 boundary is non-negotiable:** Any non-root file/package lookup must surface as a clean typst compile error forwarded to the banner — never a panic, never silent. Spec §4.1, §9.
+- **v1 boundary is non-negotiable:** Any non-root file/package lookup must surface as a clean typst compile error forwarded to the banner - never a panic, never silent. Spec §4.1, §9.
 - **Test convention:** Pure-logic tests only in `src/__tests__/` (no Tauri IPC mocking, no CodeMirror mocking, no DOM mocking). Backend tests are inline `#[cfg(test)]` modules. (tabs spec §12, restore-on-launch spec §7.)
-- **Verify before claiming done:** `npm test`, `npx tsc --noEmit`, `cargo test --manifest-path src-tauri/Cargo.toml` — all must pass. (AGENTS.md.)
+- **Verify before claiming done:** `npm test`, `npx tsc --noEmit`, `cargo test --manifest-path src-tauri/Cargo.toml` - all must pass. (AGENTS.md.)
 - **Catalog rule (AGENTS.md):** A new Tauri command MUST land in both `main.rs invoke_handler![]` AND `src/fileio.ts`. The new file association MUST land in `tauri.conf.json`. Two catalogs disagreeing about the same item is a stop-and-fix red flag.
 - **No commit/push without the plan carve-out:** This plan is approved spec/plan-driven work, so commit at task boundaries per AGENTS.md's carve-out. Branch from latest `main` (suggested `feat/typst-preview`). Do not push unless the user asks.
 - **Ponytail:** Match the existing module style. No abstraction with one implementation; no scaffolding "for later". Inline styles for the error banner are acceptable (matches the no-CSS-file convention seen elsewhere in the codebase).
@@ -28,23 +28,23 @@
 
 | File | Responsibility | Change |
 |---|---|---|
-| `src-tauri/Cargo.toml` | Backend deps | **Modify** — add `typst`, `typst-assets` (`fonts` feature), and `typst-svg` if the pinned version splits SVG emission out of `typst`. |
+| `src-tauri/Cargo.toml` | Backend deps | **Modify** - add `typst`, `typst-assets` (`fonts` feature), and `typst-svg` if the pinned version splits SVG emission out of `typst`. |
 | `src-tauri/src/typst_compile.rs` | `compile_typst` command + `SingleFileWorld` + inline tests | **Create.** |
-| `src-tauri/src/main.rs` | Command registration | **Modify** — add `mod typst_compile;` and `typst_compile::compile_typst` to `invoke_handler![...]`. |
-| `src/fileio.ts` | Frontend `invoke()` wrappers | **Modify** — add `TypstError`, `TypstResult` interfaces and `compileTypst(text)` wrapper. |
-| `src/preview.ts` | Render-into-pane module | **Modify** — add `previewKind` state, `setPreviewKind`, race-guarded `renderTypstNow`, dispatch in `renderPreviewNow`, two debounce instances, error banner. |
-| `src/main.ts` | Tab orchestration | **Modify** — add `isTypst()` predicate; rewrite `applyPreviewMode()` (spec §4.3); add `typ` + `typst` to `FILTERS`. |
-| `src-tauri/tauri.conf.json` | OS file associations | **Modify** — add `.typ` + `.typst` to `bundle.fileAssociations`. |
+| `src-tauri/src/main.rs` | Command registration | **Modify** - add `mod typst_compile;` and `typst_compile::compile_typst` to `invoke_handler![...]`. |
+| `src/fileio.ts` | Frontend `invoke()` wrappers | **Modify** - add `TypstError`, `TypstResult` interfaces and `compileTypst(text)` wrapper. |
+| `src/preview.ts` | Render-into-pane module | **Modify** - add `previewKind` state, `setPreviewKind`, race-guarded `renderTypstNow`, dispatch in `renderPreviewNow`, two debounce instances, error banner. |
+| `src/main.ts` | Tab orchestration | **Modify** - add `isTypst()` predicate; rewrite `applyPreviewMode()` (spec §4.3); add `typ` + `typst` to `FILTERS`. |
+| `src-tauri/tauri.conf.json` | OS file associations | **Modify** - add `.typ` + `.typst` to `bundle.fileAssociations`. |
 | `src/__tests__/typst-preview.test.ts` | Frontend pure-logic tests | **Create.** Race guard token helper + path predicates. |
 | `src-tauri/capabilities/default.json` | Permissions | **No change.** |
-| `index.html` | Dialog markup | **No change** — error banner built from TS. |
+| `index.html` | Dialog markup | **No change** - error banner built from TS. |
 | `package.json` | Frontend deps | **No change.** |
-| `src/render.ts` | Markdown-only render | **No change** — typst does not go through `renderMarkdown`. |
+| `src/render.ts` | Markdown-only render | **No change** - typst does not go through `renderMarkdown`. |
 | `src/menu.ts` | Menu setup | **No change.** |
 
 ---
 
-## Task 1: Backend — `compile_typst` Tauri command + `SingleFileWorld`
+## Task 1: Backend - `compile_typst` Tauri command + `SingleFileWorld`
 
 **Files:**
 - Modify: `src-tauri/Cargo.toml` (deps section, currently lines 9-16).
@@ -61,7 +61,7 @@
 
 **Context for the implementer (read spec §2, §3.1, §4.1, §9, §10):**
 
-typst is not a markup→HTML pass like `marked()`. It is a real typesetter whose library entry point is `typst::compile(&world)` against a `World` trait. The trait surface and the SVG emission API have shifted across minor typst versions, so this task verifies the API for the resolved version before writing impl code. The v1 boundary is enforced at the `World` level: any non-root file lookup returns an error, so `#include`/`#import`/`@preview` all surface as clean compile errors (spec §9). The contract above is the hard surface — do not deviate; the frontend tests and smoke scenarios pin against it.
+typst is not a markup→HTML pass like `marked()`. It is a real typesetter whose library entry point is `typst::compile(&world)` against a `World` trait. The trait surface and the SVG emission API have shifted across minor typst versions, so this task verifies the API for the resolved version before writing impl code. The v1 boundary is enforced at the `World` level: any non-root file lookup returns an error, so `#include`/`#import`/`@preview` all surface as clean compile errors (spec §9). The contract above is the hard surface - do not deviate; the frontend tests and smoke scenarios pin against it.
 
 - [ ] **Step 1: Resolve and record the latest stable typst versions**
 
@@ -94,11 +94,11 @@ cargo doc --package typst --no-deps --open
 
 (Or read `~/.cargo/registry/src/.../typst-<version>/src/` directly.) Confirm against the pinned source:
 
-1. **`typst::World` trait methods** — list every method the trait requires (typically: `library`, `book`, `font`, `file`, `resolve`/`source`, `today`; some versions add `package`). Record the exact method signatures.
-2. **`typst::compile` signature** — return type is `SourceResult<Document>` (= `Result<Document, EcoVec<SourceDiagnostic>>`) in recent versions. Confirm.
-3. **SVG emission** — recent versions expose it as `typst::svg::svg(page)` or `typst::svg::svg_formatted(page, options)` from the `typst` crate (behind no separate feature flag) OR via a separate `typst-svg` crate. Confirm which.
-4. **`Source` construction** — `Source::detached(text)` is the standard way to make a root source from a string. Confirm.
-5. **`SourceDiagnostic`** — confirm how to extract the error message and the line number (via `.diag.message` and `.span` resolution against the world's source, or a traces helper). If line extraction is awkward in this version, fall back to `line: None` and surface just the message — do not block on pretty spans.
+1. **`typst::World` trait methods** - list every method the trait requires (typically: `library`, `book`, `font`, `file`, `resolve`/`source`, `today`; some versions add `package`). Record the exact method signatures.
+2. **`typst::compile` signature** - return type is `SourceResult<Document>` (= `Result<Document, EcoVec<SourceDiagnostic>>`) in recent versions. Confirm.
+3. **SVG emission** - recent versions expose it as `typst::svg::svg(page)` or `typst::svg::svg_formatted(page, options)` from the `typst` crate (behind no separate feature flag) OR via a separate `typst-svg` crate. Confirm which.
+4. **`Source` construction** - `Source::detached(text)` is the standard way to make a root source from a string. Confirm.
+5. **`SourceDiagnostic`** - confirm how to extract the error message and the line number (via `.diag.message` and `.span` resolution against the world's source, or a traces helper). If line extraction is awkward in this version, fall back to `line: None` and surface just the message - do not block on pretty spans.
 
 Record the verified API in the task report. **Do not proceed to Step 3 without this.**
 
@@ -145,7 +145,7 @@ mod tests {
         assert!(r.pages.is_empty(), "expected no pages on compile error");
         assert!(!r.errors.is_empty(), "expected at least one error");
         // at least one error should carry a line if the pinned version exposes it
-        // (don't assert line.is_some() hard — version-dependent)
+        // (don't assert line.is_some() hard - version-dependent)
     }
 
     #[test]
@@ -197,7 +197,7 @@ impl SingleFileWorld {
 }
 
 // Embedded font book + bytes: built once, reused across compiles.
-// ponytail: static OnceLock rather than per-call init — font parsing is the heavy part.
+// ponytail: static OnceLock rather than per-call init - font parsing is the heavy part.
 fn fonts() -> &'static (typst::text::FontBook, Vec<typst::text::Font>) {
     static FONTS: OnceLock<(typst::text::FontBook, Vec<typst::text::Font>)> = OnceLock::new();
     FONTS.get_or_init(|| {
@@ -218,10 +218,10 @@ impl World for SingleFileWorld {
     //   library   -> default Library for the pinned version (typically `typst::Library::default()`)
     //   book      -> &fonts().0
     //   font(id)  -> fonts().1.get(id).cloned()  (Option<Font>)
-    //   file(id)  -> Err for any id != root (v1 boundary — spec §9). Use the pinned
+    //   file(id)  -> Err for any id != root (v1 boundary - spec §9). Use the pinned
     //                version's expected error type (typically FileError::NotFound).
     //   source(id, _) -> if id == self.source.id() return Ok(self.source.clone()) else Err
-    //   package(spec) -> Err (v1 boundary — no @preview fetch)
+    //   package(spec) -> Err (v1 boundary - no @preview fetch)
     //   today(None)   -> 25-character YYYY-MM-DD string of the system date (use the
     //                pinned version's preferred date path; chrono if transitively available,
     //                else a tiny manual formatter over SystemTime).
@@ -260,7 +260,7 @@ pub fn compile_typst(text: String) -> Result<TypstResult, String> {
 mod tests { /* unchanged from Step 3 */ }
 ```
 
-Note: `#[tauri::command]` is invoked from the webview; sync is fine, Tauri runs commands on a thread pool by default (matches `fs_cmds.rs`). For SVG emission, prefer the single-page `svg(page)` form (not the multi-page bundled form) — we want one SVG per page so the frontend can stack them.
+Note: `#[tauri::command]` is invoked from the webview; sync is fine, Tauri runs commands on a thread pool by default (matches `fs_cmds.rs`). For SVG emission, prefer the single-page `svg(page)` form (not the multi-page bundled form) - we want one SVG per page so the frontend can stack them.
 
 - [ ] **Step 6: Register the command in `main.rs`**
 
@@ -284,7 +284,7 @@ In the `invoke_handler![...]` block (currently lines 31-35), add `typst_compile:
 - [ ] **Step 7: Run tests to verify they pass**
 
 Run: `cargo test --manifest-path src-tauri/Cargo.toml`
-Expected: all tests pass, 0 failed — the 3 new typst tests plus all existing `fs_cmds` tests. The `include_is_clean_error_in_v1` test is the v1 boundary guard; if it fails with a panic instead of a clean error, the `World` file/package resolver is returning the wrong thing — re-check Step 5 against the pinned API.
+Expected: all tests pass, 0 failed - the 3 new typst tests plus all existing `fs_cmds` tests. The `include_is_clean_error_in_v1` test is the v1 boundary guard; if it fails with a panic instead of a clean error, the `World` file/package resolver is returning the wrong thing - re-check Step 5 against the pinned API.
 
 Run: `cargo build --manifest-path src-tauri/Cargo.toml`
 Expected: clean build (no warnings beyond pre-existing).
@@ -318,7 +318,7 @@ point were verified against the pinned source before implementing."
 
 ---
 
-## Task 2: Frontend — `compileTypst` wrapper + preview.ts dispatch + race guard
+## Task 2: Frontend - `compileTypst` wrapper + preview.ts dispatch + race guard
 
 **Files:**
 - Modify: `src/fileio.ts` (add wrapper + interfaces; current file is 57 lines, append after line 25 `getStartupFile`).
@@ -332,13 +332,13 @@ point were verified against the pinned source before implementing."
   - Existing `invoke` from `@tauri-apps/api/core`.
 - Produces:
   - `compileTypst(text: string): Promise<TypstResult>` from `src/fileio.ts`.
-  - `setPreviewKind(kind: "md" | "typ"): void` from `src/preview.ts` — called by `main.ts` before render.
+  - `setPreviewKind(kind: "md" | "typ"): void` from `src/preview.ts` - called by `main.ts` before render.
   - Existing exports `renderPreviewNow`, `updatePreview`, `setPreviewVisible`, `isPreviewVisible`, `syncPreviewScroll` keep their signatures.
-  - Race-guard helper exposed for testing: `pickRender(currentToken: number, latestToken: () => number): boolean` — pure, returns `currentToken === latestToken()`.
+  - Race-guard helper exposed for testing: `pickRender(currentToken: number, latestToken: () => number): boolean` - pure, returns `currentToken === latestToken()`.
 
 **Context for the implementer (read spec §3.2, §4.2, §7.2):**
 
-`renderPreviewNow(text)` is **sync today**. Adding typst makes the typ branch **async** (Tauri invoke). On fast typing this means multiple compiles can be in flight; the latest one must win, and a stale slow one must **not** overwrite a newer render. The race guard is the single correctness-critical piece of new frontend logic — a monotonic render token, captured per call, checked on resolve. The token check must be unit-tested directly (project convention: pure-logic tests only, no DOM mocking — so extract the decision into a pure helper).
+`renderPreviewNow(text)` is **sync today**. Adding typst makes the typ branch **async** (Tauri invoke). On fast typing this means multiple compiles can be in flight; the latest one must win, and a stale slow one must **not** overwrite a newer render. The race guard is the single correctness-critical piece of new frontend logic - a monotonic render token, captured per call, checked on resolve. The token check must be unit-tested directly (project convention: pure-logic tests only, no DOM mocking - so extract the decision into a pure helper).
 
 The error banner is built from TS (no `index.html` change, spec §6) and attached to the pane's parent. On error, the last-good SVG stays in the pane; only the banner shows/hides.
 
@@ -369,7 +369,7 @@ describe("typst render race guard", () => {
 
   it("drops when interleaved out of order (slow then fast)", () => {
     // Simulate: token 1 starts (slow), token 2 starts+finishes fast (latest=2),
-    // then token 1's result arrives — must drop.
+    // then token 1's result arrives - must drop.
     const slowToken = 1;
     const latestAfterFast = 2;
     expect(pickRender(slowToken, latestAfterFast)).toBe(false);
@@ -412,7 +412,7 @@ describe("previewKindForPath", () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npm test -- typst-preview`
-Expected: FAIL (`vitest` runs but no `previewKindForPath` import resolves yet — or the file's local copies pass trivially; in that case, see Step 4 which moves them into preview.ts and re-imports).
+Expected: FAIL (`vitest` runs but no `previewKindForPath` import resolves yet - or the file's local copies pass trivially; in that case, see Step 4 which moves them into preview.ts and re-imports).
 
 (Note: the test file as written above contains local copies of the helpers and would technically pass against itself. The intent is to lock the *contract*. Step 4 replaces the local copies with imports from `preview.ts`, at which point the tests pin real code. If you prefer strict TDD red-green, move the helpers into `preview.ts` first, then write tests that import them, then run to red on missing exports. Either order is acceptable; the contract is what matters.)
 
@@ -499,7 +499,7 @@ function errorBannerEl(): HTMLDivElement {
   if (errorBanner) return errorBanner;
   const el = document.createElement("div");
   el.id = "preview-error";
-  // ponytail: inline styles — klad has no CSS file for plugin chrome; matches
+  // ponytail: inline styles - klad has no CSS file for plugin chrome; matches
   // the dialog style precedent. Upgrade to a class if a stylesheet lands.
   el.style.color = "#b00";
   el.style.background = "#fde8e8";
@@ -623,7 +623,7 @@ describe("previewKindForPath", () => {
 ```
 
 Run: `npm test`
-Expected: all tests pass, 0 failed — the new typst-preview tests plus the existing session/tabs/singleinstance tests.
+Expected: all tests pass, 0 failed - the new typst-preview tests plus the existing session/tabs/singleinstance tests.
 
 - [ ] **Step 6: Typecheck**
 
@@ -642,13 +642,13 @@ by main.ts's applyPreviewMode. The 'typ' branch fires an async compileTypst
 IPC and applies the per-page SVGs (or shows a red banner above the pane
 with the first error, keeping the last-good render). A monotonic render
 token guards against stale compiles overwriting newer renders on fast
-typing — the only correctness-critical piece of new logic. Two debounce
+typing - the only correctness-critical piece of new logic. Two debounce
 instances preserve markdown's 150ms while typst uses 400ms.
 
 fileio.ts adds the compileTypst wrapper (mirrors the existing invoke()
 pattern) and the TypstResult/TypstError interfaces. Adds vitest tests for
 the race guard and the path-to-kind derivation (pure-logic only, per
-project convention — no DOM or Tauri IPC mocking). No index.html or
+project convention - no DOM or Tauri IPC mocking). No index.html or
 capabilities change; the banner is built from TS."
 ```
 
@@ -668,7 +668,7 @@ capabilities change; the banner is built from TS."
 
 **Context for the implementer (read spec §3.3, §4.3, §5, §7.3):**
 
-`applyPreviewMode()` in `main.ts:181-186` currently does a markdown-only check and toggles the pane. It needs to compute the kind from the active tab's path, push that into preview.ts via `setPreviewKind`, and dispatch the right render. `FILTERS` at `main.ts:34-37` controls the Open dialog's "Text files" extension list — add `typ` and `typst`. The Tauri `bundle.fileAssociations` at `tauri.conf.json:36-42` controls OS-level double-click handling on Windows + Linux.
+`applyPreviewMode()` in `main.ts:181-186` currently does a markdown-only check and toggles the pane. It needs to compute the kind from the active tab's path, push that into preview.ts via `setPreviewKind`, and dispatch the right render. `FILTERS` at `main.ts:34-37` controls the Open dialog's "Text files" extension list - add `typ` and `typst`. The Tauri `bundle.fileAssociations` at `tauri.conf.json:36-42` controls OS-level double-click handling on Windows + Linux.
 
 - [ ] **Step 1: Import `setPreviewKind` in `main.ts`**
 
@@ -756,7 +756,7 @@ function applyPreviewMode(): void {
 }
 ```
 
-Leave every other call site of `applyPreviewMode` (tab switch, save-as, close-tab, etc.) untouched — they call `applyPreviewMode()` which now does the right thing per kind.
+Leave every other call site of `applyPreviewMode` (tab switch, save-as, close-tab, etc.) untouched - they call `applyPreviewMode()` which now does the right thing per kind.
 
 - [ ] **Step 4: Add `.typ`/`.typst` file association in `tauri.conf.json`**
 
@@ -784,7 +784,7 @@ Expected: all pass, 0 failed (Task 2 tests + existing suite).
 Run: `cargo test --manifest-path src-tauri/Cargo.toml`
 Expected: 0 failed (Task 1 tests + existing fs_cmds).
 
-- [ ] **Step 6: Manual smoke test (acceptance — spec §7.3)**
+- [ ] **Step 6: Manual smoke test (acceptance - spec §7.3)**
 
 Build the dev app and walk the scenarios. From repo root:
 
@@ -805,16 +805,16 @@ Prep: create test files in `C:\Users\ruben\AppData\Local\Temp\opencode\` (pre-ap
 Walk each scenario. All must pass.
 
 1. **Open `.typ` → renders:** Drag `typst-smoke.typ` onto the klad window (or use `Ctrl+O`). Preview pane shows 1 SVG page with the rendered text + italic + heading. No error banner.
-2. **Live keystroke:** Append `\n\n#image("missing.png")` — within ~400ms the error banner appears mentioning the missing file. Delete the line — banner disappears, fresh render replaces.
-3. **Last-good stays on error:** From the rendered state, type `#set page(width: )` — the **last good SVG stays on screen**, the banner shows the parse error with a line number. Fix the source — banner hides, fresh render.
-4. **v1 boundary — `#include` is a clean error:** Set the buffer to `#include "other.typ"`. Banner mentions the missing file. **No crash, no panic.**
-5. **Race guard on fast typing:** Hold down a key for several seconds (repeat) in a doc that compiles cleanly. The pane should not flicker between stale and fresh renders — the latest compile wins each time. (Visual check; the unit test in Task 2 pins the contract.)
-6. **Tab switch md ↔ typ:** Open `typst-smoke.typ` and an `.md` file. Switch tabs — the pane re-renders with the right kind each direction. No stale cross-kind content; banner from a typ error in tab A does not persist when switching to the md tab.
-7. **Tab switch typ → txt:** Open a `.txt` file. Preview hides. Switch back to `.typ` — preview re-shows and re-renders.
+2. **Live keystroke:** Append `\n\n#image("missing.png")` - within ~400ms the error banner appears mentioning the missing file. Delete the line - banner disappears, fresh render replaces.
+3. **Last-good stays on error:** From the rendered state, type `#set page(width: )` - the **last good SVG stays on screen**, the banner shows the parse error with a line number. Fix the source - banner hides, fresh render.
+4. **v1 boundary - `#include` is a clean error:** Set the buffer to `#include "other.typ"`. Banner mentions the missing file. **No crash, no panic.**
+5. **Race guard on fast typing:** Hold down a key for several seconds (repeat) in a doc that compiles cleanly. The pane should not flicker between stale and fresh renders - the latest compile wins each time. (Visual check; the unit test in Task 2 pins the contract.)
+6. **Tab switch md ↔ typ:** Open `typst-smoke.typ` and an `.md` file. Switch tabs - the pane re-renders with the right kind each direction. No stale cross-kind content; banner from a typ error in tab A does not persist when switching to the md tab.
+7. **Tab switch typ → txt:** Open a `.txt` file. Preview hides. Switch back to `.typ` - preview re-shows and re-renders.
 8. **Open dialog filter:** `Ctrl+O` → the "Text files" filter entry shows `*.txt;*.md;...;*.typ;*.typst` in the file picker.
 9. **Linux smoke (if available):** Same 1-7 on the deb/appimage build. (Skip if no Linux environment in this session; record in the task report.)
 
-If any scenario fails, **do not commit** — re-read spec §3.2, §4.2 (race guard), §5 (behavior matrix), and the relevant task; confirm the edit matches the step verbatim; confirm `compile_typst` is registered in `main.rs invoke_handler![]` AND exposed via `compileTypst` in `fileio.ts` (catalog rule).
+If any scenario fails, **do not commit** - re-read spec §3.2, §4.2 (race guard), §5 (behavior matrix), and the relevant task; confirm the edit matches the step verbatim; confirm `compile_typst` is registered in `main.rs invoke_handler![]` AND exposed via `compileTypst` in `fileio.ts` (catalog rule).
 
 - [ ] **Step 7: Commit**
 
@@ -856,11 +856,11 @@ file associations (tauri.conf.json bundle.fileAssociations) both gain
   - Spec §10 (version pin) → Task 1 Steps 1, 2 (resolve + verify-gate).
   All spec sections mapped.
 
-- [x] **Placeholder scan:** No TBD/TODO/"add error handling"/"similar to". Task 1 Step 5 has two `/* ... */` comment placeholders inside the code skeleton (`format_diag`, SVG emission call) — these are **deliberate**: the exact calls depend on the typst version verified in Step 2, and the skeleton gives the implementer the surrounding contract while pointing to Step 2's recorded API. The structs, command shape, test code, frontend code, main.ts rewrite, and tauri.conf.json entry are all complete verbatim. Smoke scenarios use concrete file paths and content.
+- [x] **Placeholder scan:** No TBD/TODO/"add error handling"/"similar to". Task 1 Step 5 has two `/* ... */` comment placeholders inside the code skeleton (`format_diag`, SVG emission call) - these are **deliberate**: the exact calls depend on the typst version verified in Step 2, and the skeleton gives the implementer the surrounding contract while pointing to Step 2's recorded API. The structs, command shape, test code, frontend code, main.ts rewrite, and tauri.conf.json entry are all complete verbatim. Smoke scenarios use concrete file paths and content.
 
 - [x] **Type consistency:**
-  - `TypstResult` / `TypstError` defined in Rust (Task 1 Step 3) and mirrored in TS (Task 2 Step 3) — fields match: `pages: Vec<String>` ↔ `pages: string[]`, `errors: Vec<TypstError>` ↔ `errors: TypstError[]`, `message: String` ↔ `message: string`, `line: Option<u32>` ↔ `line?: number | null` (serde emits `null` for `None`, optional in TS covers both undefined and null).
-  - `compileTypst(text: string): Promise<TypstResult>` in fileio.ts ↔ `compile_typst(text: String) -> Result<TypstResult, String>` in Rust. Tauri unwraps the outer `Result`; the frontend sees `TypstResult` on success, rejects the promise on `Err(String)`. The `void renderTypstNow(text)` call in preview.ts handles rejection implicitly (would surface as unhandled rejection — acceptable for v1; folder mode will add error UI for transport failures).
+  - `TypstResult` / `TypstError` defined in Rust (Task 1 Step 3) and mirrored in TS (Task 2 Step 3) - fields match: `pages: Vec<String>` ↔ `pages: string[]`, `errors: Vec<TypstError>` ↔ `errors: TypstError[]`, `message: String` ↔ `message: string`, `line: Option<u32>` ↔ `line?: number | null` (serde emits `null` for `None`, optional in TS covers both undefined and null).
+  - `compileTypst(text: string): Promise<TypstResult>` in fileio.ts ↔ `compile_typst(text: String) -> Result<TypstResult, String>` in Rust. Tauri unwraps the outer `Result`; the frontend sees `TypstResult` on success, rejects the promise on `Err(String)`. The `void renderTypstNow(text)` call in preview.ts handles rejection implicitly (would surface as unhandled rejection - acceptable for v1; folder mode will add error UI for transport failures).
   - `setPreviewKind(kind: "md" | "typ"): void` exported from preview.ts ↔ called in main.ts Step 3 with `kind === "typ" ? "typ" : "md"`.
   - `pickRender(currentToken: number, latestToken: number): boolean` exported from preview.ts ↔ imported in test file Task 2 Step 5.
   - `PreviewKind` type exported for testability (not strictly required, but used in the type signature of `setPreviewKind`).

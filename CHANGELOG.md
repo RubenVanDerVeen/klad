@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 ## [0.4.0] - 2026-09-16
 
 ### Added
-- **Typst single-file live preview** — `.typ` and `.typst` files render a live SVG preview via embedded `typst` compile (single-file only: no `#include`/`#import`, no `@preview` packages, no system fonts). Auto-toggles alongside the existing Markdown preview; error banner shows compile errors while keeping the last-good render.
+- **Typst single-file live preview** - `.typ` and `.typst` files render a live SVG preview via embedded `typst` compile (single-file only: no `#include`/`#import`, no `@preview` packages, no system fonts). Auto-toggles alongside the existing Markdown preview; error banner shows compile errors while keeping the last-good render.
 
 ### Fixed
 - Dark-mode selection and caret contrast in the editor.
@@ -28,12 +28,12 @@ First tagged release (`v*` tag triggers CI to build Windows + Linux artifacts). 
 
 ### Added
 
-- **Multi-tab editing** — multiple files open in one window with a tab bar; per-tab close with dirty-confirm; Next/Previous Tab cycling (`Ctrl+Tab` / `Ctrl+Shift+Tab`); Tabs menu.
-- **Session restore** — unsaved untitled notes and unsaved edits to named files survive close/reopen, stashed inside Klad (never written to disk). Dirty buffers restore dirty; clean named files re-read from disk.
-- **Hot exit** — closing the window silently stashes every dirty buffer, no save prompt. Per-tab close (`Ctrl+W`) keeps the classic prompt.
-- **Restore on file-arg launch** — double-clicking a file when Klad isn't running opens it alongside the restored session, matching the already-running behavior.
-- **Single-instance mode** — a second launch forwards its file path to the running instance and exits; no duplicate windows.
-- **Dark theme** — light/dark preference with a View menu toggle (`Ctrl+Shift+L`); theme-aware CSS across editor, dialogs, and preview.
+- **Multi-tab editing** - multiple files open in one window with a tab bar; per-tab close with dirty-confirm; Next/Previous Tab cycling (`Ctrl+Tab` / `Ctrl+Shift+Tab`); Tabs menu.
+- **Session restore** - unsaved untitled notes and unsaved edits to named files survive close/reopen, stashed inside Klad (never written to disk). Dirty buffers restore dirty; clean named files re-read from disk.
+- **Hot exit** - closing the window silently stashes every dirty buffer, no save prompt. Per-tab close (`Ctrl+W`) keeps the classic prompt.
+- **Restore on file-arg launch** - double-clicking a file when Klad isn't running opens it alongside the restored session, matching the already-running behavior.
+- **Single-instance mode** - a second launch forwards its file path to the running instance and exits; no duplicate windows.
+- **Dark theme** - light/dark preference with a View menu toggle (`Ctrl+Shift+L`); theme-aware CSS across editor, dialogs, and preview.
 - Redesigned app icon (K document glyph).
 
 ### Fixed

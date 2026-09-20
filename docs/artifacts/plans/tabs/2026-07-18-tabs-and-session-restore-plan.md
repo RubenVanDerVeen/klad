@@ -4,7 +4,7 @@
 
 **Goal:** Add VS Code-style multi-tab editing (one tab per open file) plus session restore (reopen the same named files and any unsaved untitled buffers after restart) to klad.
 
-**Architecture:** Approach A — one CodeMirror `EditorView` per tab, all children of `#editor`, only the active one visible. A pure-logic `tabs.ts` module owns the tab collection as immutable reducers; `main.ts` holds the runtime (each `TabState` paired with its live `EditorView`) and pushes the active tab's metadata to the existing status bar / title / preview. Session state persists to `localStorage` under `klad-session`, sibling to `klad-settings`.
+**Architecture:** Approach A - one CodeMirror `EditorView` per tab, all children of `#editor`, only the active one visible. A pure-logic `tabs.ts` module owns the tab collection as immutable reducers; `main.ts` holds the runtime (each `TabState` paired with its live `EditorView`) and pushes the active tab's metadata to the existing status bar / title / preview. Session state persists to `localStorage` under `klad-session`, sibling to `klad-settings`.
 
 **Tech Stack:** Tauri 2 shell, vanilla TypeScript, CodeMirror 6, Vitest (frontend), `@tauri-apps/api/window` + `@tauri-apps/plugin-dialog`. **No Rust changes, no new Tauri commands, no new deps, no new capabilities.**
 
@@ -679,7 +679,7 @@ let hooks_onNew: () => void = () => {};
 // Re-export init to also capture hooks (overwrite the simpler version above).
 ```
 
-The "two init" sketch above is awkward — replace the entire file contents with the consolidated version below. (The intermediate sketch is shown only to make the consolidation explicit.)
+The "two init" sketch above is awkward - replace the entire file contents with the consolidated version below. (The intermediate sketch is shown only to make the consolidation explicit.)
 
 **Final `src/tabbar.ts` (overwrite the file with this):**
 
@@ -778,7 +778,7 @@ git commit -m "feat(tabbar): add tab bar DOM module and styling"
 ## Task 4: Multi-tab core in `main.ts` (refactor + open/new/switch with single-tab parity)
 
 **Files:**
-- Modify: `src/main.ts` (substantial — replace single-`view` orchestration with `runtime` + `coll`)
+- Modify: `src/main.ts` (substantial - replace single-`view` orchestration with `runtime` + `coll`)
 
 **Interfaces:**
 - Consumes: `tabs.ts` (Task 1), `tabbar.ts` (Task 3). Uses existing `editor.ts`, `document.ts`, `fileio.ts`, `dialogs.ts`, `statusbar.ts`, `preview.ts`.
@@ -839,7 +839,7 @@ let runtime: RuntimeTab[] = [];
 let meta: DocMeta = newDoc(); // alias of activeTab().meta; rebound on switch
 ```
 
-(Remove the now-duplicate `const settings: Settings = loadSettings();` line that was at line 27 of the old file — it's consolidated above.)
+(Remove the now-duplicate `const settings: Settings = loadSettings();` line that was at line 27 of the old file - it's consolidated above.)
 
 - [ ] **Step 3: Add active-tab helper and tab-bar view projection**
 
@@ -962,7 +962,7 @@ function scheduleSessionSave(): void {
 }
 ```
 
-- [ ] **Step 7: Rewrite `doNew` to create a tab (no discard prompt — old prompt was a single-doc concern)**
+- [ ] **Step 7: Rewrite `doNew` to create a tab (no discard prompt - old prompt was a single-doc concern)**
 
 Replace the existing `doNew` (old lines 135–138) with:
 
@@ -998,7 +998,7 @@ async function openPath(path: string): Promise<void> {
 }
 ```
 
-- [ ] **Step 9: Rewrite `doOpen` (drop the discard prompt — opening a file no longer disturbs the current tab)**
+- [ ] **Step 9: Rewrite `doOpen` (drop the discard prompt - opening a file no longer disturbs the current tab)**
 
 Replace the existing `doOpen` (old lines 154–158) with:
 
@@ -1054,7 +1054,7 @@ async function doSaveAs(): Promise<void> {
 
 - [ ] **Step 11: Update `confirmDiscard` to operate on the active tab**
 
-The existing `confirmDiscard` (old lines 126–133) reads `meta.dirty` and calls `doSave()`. Both now operate on the active tab automatically (since `meta` is the active tab's alias and `doSave` uses `activeTab()`). The body is unchanged — keep as-is. Verify the existing function reads:
+The existing `confirmDiscard` (old lines 126–133) reads `meta.dirty` and calls `doSave()`. Both now operate on the active tab automatically (since `meta` is the active tab's alias and `doSave` uses `activeTab()`). The body is unchanged - keep as-is. Verify the existing function reads:
 
 ```ts
 async function confirmDiscard(): Promise<boolean> {
@@ -1127,7 +1127,7 @@ In the `setupMenu({...}, settings.wrap)` call (old lines 192–219), update the 
 - `togglePreview: (on) => { setPreviewVisible(on); if (on) renderPreviewNow(getText(view)); }` →
   `togglePreview: (on) => { setPreviewVisible(on); if (on) renderPreviewNow(getText(activeTab().view)); }`
 
-The other actions (`setWrap`, `zoomIn`, etc.) need a small change for `setWrap` — it currently does `setWrap(view, on)` for the single view; with N views it must reconfigure all of them:
+The other actions (`setWrap`, `zoomIn`, etc.) need a small change for `setWrap` - it currently does `setWrap(view, on)` for the single view; with N views it must reconfigure all of them:
 
 Replace:
 
@@ -1172,7 +1172,7 @@ void getStartupFile().then((p) => {
 });
 ```
 
-Note: the very first `appendAndActivate` creates a tab before `getStartupFile` resolves; if a startup file exists, `openPath` adds a second tab. Task 7 changes this to skip the placeholder when a startup file or session is pending. For Task 4 this is acceptable (manual smoke: launching without args shows one untitled tab; launching with a file shows two tabs — the placeholder plus the file).
+Note: the very first `appendAndActivate` creates a tab before `getStartupFile` resolves; if a startup file exists, `openPath` adds a second tab. Task 7 changes this to skip the placeholder when a startup file or session is pending. For Task 4 this is acceptable (manual smoke: launching without args shows one untitled tab; launching with a file shows two tabs - the placeholder plus the file).
 
 - [ ] **Step 17: Update `onCloseRequested` to a temporary version (Task 7 will finish it)**
 
@@ -1223,7 +1223,7 @@ git commit -m "feat(main): refactor to multi-tab runtime with single-tab parity"
 
 **Interfaces:**
 - Consumes: `closeTab`, `switchTab` from `tabs.ts`; `askSave` from `dialogs.ts`; existing `doSave` from Task 4.
-- Produces: `closeTabById(id: string): Promise<void>` used by the tab bar's `onClose` hook (Task 4 references it — it doesn't exist yet; this task adds it).
+- Produces: `closeTabById(id: string): Promise<void>` used by the tab bar's `onClose` hook (Task 4 references it - it doesn't exist yet; this task adds it).
 
 - [ ] **Step 1: Add `closeTabById`**
 
@@ -1554,9 +1554,9 @@ Run: `npm test`
 Expected: all green (no test changes in this task).
 
 Run: `cd src-tauri && cargo test`
-Expected: all 11 backend tests pass (unchanged — regression gate only).
+Expected: all 11 backend tests pass (unchanged - regression gate only).
 
-- [ ] **Step 5: Manual smoke — full session-restore walkthrough**
+- [ ] **Step 5: Manual smoke - full session-restore walkthrough**
 
 In `npm run tauri dev`:
 
@@ -1583,14 +1583,14 @@ git commit -m "feat(session): save, restore, and shutdown dirty-walk"
 
 After Task 7:
 
-- [ ] Run `npm run build` — succeeds with no TypeScript errors.
-- [ ] Run `npm test` — all green (existing + new `tabs.test.ts` + `session.test.ts`).
-- [ ] Run `cd src-tauri && cargo test` — all green (regression only).
+- [ ] Run `npm run build` - succeeds with no TypeScript errors.
+- [ ] Run `npm test` - all green (existing + new `tabs.test.ts` + `session.test.ts`).
+- [ ] Run `cd src-tauri && cargo test` - all green (regression only).
 - [ ] Run `npm run tauri dev` and complete the full smoke walkthrough from Task 7 Step 5.
 
 ## Self-review notes
 
-(Planner's own check against the spec — kept here so reviewers see the reasoning.)
+(Planner's own check against the spec - kept here so reviewers see the reasoning.)
 
 - **Spec §5 (data model):** `TabState` and `TabCollection` → Task 1. `Session` and `SessionEntry` → Task 2. `RuntimeTab` → Task 4 Step 2.
 - **Spec §6 (module structure):** every new and modified file listed there is created/edited by some task. The "untouched" list is honored (no Rust changes anywhere).

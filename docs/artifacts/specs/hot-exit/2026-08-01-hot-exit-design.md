@@ -1,4 +1,4 @@
-# Hot Exit on Window Close — Design
+# Hot Exit on Window Close - Design
 
 - **Date:** 2026-08-01
 - **Topic:** `hot-exit`
@@ -40,7 +40,7 @@ void appWindow.onCloseRequested(async (event) => {
 });
 ```
 
-`src/session.ts:87` — `toSession` only writes `entry.text` `if (t.meta.dirty)`.
+`src/session.ts:87` - `toSession` only writes `entry.text` `if (t.meta.dirty)`.
 
 **Therefore no dirty buffer that passes through the prompt is ever persisted with its text.** For the user's two scenarios:
 
@@ -51,7 +51,7 @@ void appWindow.onCloseRequested(async (event) => {
 
 **Why the 48 unit tests pass anyway:** `src/__tests__/session.test.ts` exercises `toSession` / `parseSession` / `persistSessionNow` as **pure logic in isolation**. No test drives the integrated close loop where the prompt clears `dirty` immediately before the stash. Standard unit/integration blind spot.
 
-## 3. Key realization — restore already works
+## 3. Key realization - restore already works
 
 The restore side already does exactly the right thing for the user's intent; it was never the bug:
 
@@ -67,7 +67,7 @@ So if dirty buffers ever **reach** `persistSessionNow` with `dirty` still set, t
 
 ### Goals
 - Closing the app window (X / Alt+F4 / File → Exit) **silently stashes** every dirty buffer (titled or untitled) to `localStorage["klad-session"]` and closes. No prompt.
-- Reopening restores those buffers dirty, with their text, ready to save or discard — already implemented, no change.
+- Reopening restores those buffers dirty, with their text, ready to save or discard - already implemented, no change.
 - Disk is **never** written on window close. `save_file` runs only on explicit Save / Save As.
 
 ### Non-goals (YAGNI for this change)
@@ -86,7 +86,7 @@ void appWindow.onCloseRequested(async (event) => {
   event.preventDefault();
   // Hot exit: silently stash every dirty buffer to localStorage and close.
   // Edits are restored dirty on next launch (restoreSessionOrNew), so the user
-  // can save or discard then. Disk is never written here — save_file runs only
+  // can save or discard then. Disk is never written here - save_file runs only
   // on explicit Save/Save As. Per-tab close (closeTabById) still prompts.
   persistSessionNow();
   await appWindow.destroy();
@@ -98,11 +98,11 @@ That is the entire code change. `persistSessionNow` (`main.ts:231-245`) already:
 - syncs `unsavedText = getText(view)` for **every** dirty tab (titled + untitled),
 - calls `saveSession(toSession(coll))`, which writes `text` for every dirty entry.
 
-Nothing else in `main.ts`, `session.ts`, `tabs.ts`, or the restore path changes at authoring time. **Note added 2026-08-02:** the separate `docs/artifacts/specs/restore-on-launch/2026-08-02-restore-on-launch-design.md` later reopened the startup IIFE branch in `main.ts` to make session restore run even when klad is launched with a file argument — so dirty buffers stashed by this hot-exit change are no longer discarded on a cold double-click launch. That change is independent of the close-time behavior specified here.
+Nothing else in `main.ts`, `session.ts`, `tabs.ts`, or the restore path changes at authoring time. **Note added 2026-08-02:** the separate `docs/artifacts/specs/restore-on-launch/2026-08-02-restore-on-launch-design.md` later reopened the startup IIFE branch in `main.ts` to make session restore run even when klad is launched with a file argument - so dirty buffers stashed by this hot-exit change are no longer discarded on a cold double-click launch. That change is independent of the close-time behavior specified here.
 
 ### Why this is safe (no data-loss regression)
 - Dirty buffers are **stashed, not discarded.** The user loses nothing on close; they get a dirty restored tab next launch.
-- The only "lost" affordance is the prompt's `Cancel` (abort close). With hot-exit there is nothing to abort — nothing is at risk. An accidental X click reopens to the exact same state.
+- The only "lost" affordance is the prompt's `Cancel` (abort close). With hot-exit there is nothing to abort - nothing is at risk. An accidental X click reopens to the exact same state.
 - Disk-write safety is **strengthened**, not weakened: today a careless `Save` click on close writes edits to disk; after this change, window close never writes to disk.
 
 ## 6. Behavior matrix (after the change)
@@ -117,16 +117,16 @@ Nothing else in `main.ts`, `session.ts`, `tabs.ts`, or the restore path changes 
 ## 7. Testing strategy
 
 ### Why no new automated unit test
-The changed code is a 3-line imperative UI handler that touches `appWindow` (`@tauri-apps/api/window`) and `runtime` (live `EditorView`s). Per the project's established convention (tabs spec §12: "Pure-logic tests only. No Tauri IPC mocking, no CodeMirror mocking."), `main.ts` integration behavior is **not** unit-tested. The pure logic this handler depends on — `toSession` persists text for all dirty tabs — is **already covered** by `src/__tests__/session.test.ts:68` ("toSession persists text for all dirty tabs (titled or untitled)") and `:81` (dirty named buffer round-trip). The bug was never in that logic.
+The changed code is a 3-line imperative UI handler that touches `appWindow` (`@tauri-apps/api/window`) and `runtime` (live `EditorView`s). Per the project's established convention (tabs spec §12: "Pure-logic tests only. No Tauri IPC mocking, no CodeMirror mocking."), `main.ts` integration behavior is **not** unit-tested. The pure logic this handler depends on - `toSession` persists text for all dirty tabs - is **already covered** by `src/__tests__/session.test.ts:68` ("toSession persists text for all dirty tabs (titled or untitled)") and `:81` (dirty named buffer round-trip). The bug was never in that logic.
 
 The appropriate verification bar for this change is the manual smoke test below + the existing automated suite staying green.
 
 ### Existing automated suite (must stay green, unchanged)
-- `npm test` — 48 frontend tests (incl. 10 in `session.test.ts`).
-- `npx tsc --noEmit` — typecheck clean.
-- `cargo test --manifest-path src-tauri/Cargo.toml` — 12 backend tests (no Rust change; confirm no regression).
+- `npm test` - 48 frontend tests (incl. 10 in `session.test.ts`).
+- `npx tsc --noEmit` - typecheck clean.
+- `cargo test --manifest-path src-tauri/Cargo.toml` - 12 backend tests (no Rust change; confirm no regression).
 
-### Manual smoke test (acceptance — the real "failing test" for this bug)
+### Manual smoke test (acceptance - the real "failing test" for this bug)
 Prep: clear `localStorage["klad-session"]` in devtools, then:
 
 1. **Untitled hot-exit:** `Ctrl+N` → type "hello untitled" → close window (X) → reopen → untitled tab present, dirty, text "hello untitled". ✅
@@ -161,7 +161,7 @@ Only `src/main.ts` is modified. No red flags: no new Tauri command, no two catal
 | Decision | Resolution |
 |---|---|
 | Window close behavior | Hot-exit: stash all dirty buffers silently, no prompt, never write disk. |
-| Per-tab close behavior | Unchanged — keep the classic save prompt (persona safety). |
+| Per-tab close behavior | Unchanged - keep the classic save prompt (persona safety). |
 | Scope of code change | The `onCloseRequested` handler body only. |
 | New automated tests | None (integration handler; pure logic already covered). Verify via manual smoke + existing suite. |
 | Crash-safety (typing debounce) | Out of scope; documented as a future one-line upgrade. |

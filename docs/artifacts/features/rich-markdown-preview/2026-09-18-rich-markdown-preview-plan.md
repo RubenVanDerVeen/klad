@@ -44,7 +44,7 @@ npm install "katex@^0.18.7" "marked-katex-extension@^5.1.12"
 
 If katex lacks types: `npm install -D @types/katex`.
 
-- [ ] **Step 2: Write failing tests** — append to the `describe` in `src/__tests__/render.test.ts`:
+- [ ] **Step 2: Write failing tests** - append to the `describe` in `src/__tests__/render.test.ts`:
 
 ```ts
   it("renders inline math", () => {
@@ -73,7 +73,7 @@ If katex lacks types: `npm install -D @types/katex`.
 Run: `npm test`
 Expected: 4 failures (no katex output yet).
 
-- [ ] **Step 4: Implement** — replace `src/render.ts` contents with:
+- [ ] **Step 4: Implement** - replace `src/render.ts` contents with:
 
 ```ts
 import DOMPurify from "dompurify";
@@ -83,7 +83,7 @@ import markedKatex from "marked-katex-extension";
 
 marked.setOptions({ gfm: true, breaks: false });
 
-// --- KaTeX ($...$ inline, $$...$$ block) — ported from hermes-console
+// --- KaTeX ($...$ inline, $$...$$ block) - ported from hermes-console
 // frontend/src/lib/markdown.ts:172-234. marked-katex owns BLOCK math only;
 // its inline rule is looser than mathInline below and would render
 // adjacency/currency cases the flavor wants literal ("5$ and 6$", "$100$").
@@ -168,7 +168,7 @@ git commit -m "feat(preview): render inline and block math with KaTeX"
 
 ---
 
-### Task 2: Host extensions — mermaid, plot, columns, image `{N%}`
+### Task 2: Host extensions - mermaid, plot, columns, image `{N%}`
 
 **Files:**
 - Modify: `src/render.ts`
@@ -177,7 +177,7 @@ git commit -m "feat(preview): render inline and block math with KaTeX"
 **Interfaces:**
 - Produces (consumed by Task 3/4): rendered hosts `<div class="mermaid" data-src="...">source</div>`, `<div class="plot" data-src="...">source</div>`, `<div class="md-columns"><div class="md-col">…` , `<img ... style="width:N%" data-size="N%">`.
 
-- [ ] **Step 1: Write failing tests** — append to `src/__tests__/render.test.ts`:
+- [ ] **Step 1: Write failing tests** - append to `src/__tests__/render.test.ts`:
 
 ```ts
   it("emits a mermaid host with visible source", () => {
@@ -232,7 +232,7 @@ git commit -m "feat(preview): render inline and block math with KaTeX"
 
 Run: `npm test`
 
-- [ ] **Step 3: Implement** — in `src/render.ts`, add above the KaTeX section (ported from console `markdown.ts:16-117,139-169`; cite as reference):
+- [ ] **Step 3: Implement** - in `src/render.ts`, add above the KaTeX section (ported from console `markdown.ts:16-117,139-169`; cite as reference):
 
 ```ts
 function escapeAttr(s: string): string {
@@ -360,7 +360,7 @@ git commit -m "feat(preview): emit mermaid, plot, columns hosts and sized images
 npm install "mermaid@^11.17.2" "function-plot@^1.25.4"
 ```
 
-- [ ] **Step 1: Write failing tests** — create `src/__tests__/rich-blocks.test.ts`:
+- [ ] **Step 1: Write failing tests** - create `src/__tests__/rich-blocks.test.ts`:
 
 ```ts
 // @vitest-environment jsdom
@@ -406,14 +406,14 @@ describe("mountRichBlocks error path", () => {
 });
 ```
 
-Note: `mountRichBlocks` returns `void`; the test needs the internal promise. Export it as `async` (see implementation) so `await` works — declare `mountRichBlocks` as `async function` and `await` it in the test.
+Note: `mountRichBlocks` returns `void`; the test needs the internal promise. Export it as `async` (see implementation) so `await` works - declare `mountRichBlocks` as `async function` and `await` it in the test.
 
 - [ ] **Step 2: Run tests, verify fail**
 
 Run: `npm test`
 Expected: module `../rich-blocks` not found.
 
-- [ ] **Step 3: Implement** — create `src/rich-blocks.ts` (simplified port of console `plot.ts` + `mermaid.ts`: no streaming debounce/MutationObserver auto-mount, no legend chips, no reset button — non-goals in the spec):
+- [ ] **Step 3: Implement** - create `src/rich-blocks.ts` (simplified port of console `plot.ts` + `mermaid.ts`: no streaming debounce/MutationObserver auto-mount, no legend chips, no reset button - non-goals in the spec):
 
 ```ts
 // Mounts `div.mermaid` and `div.plot` hosts (emitted by render.ts) into live
@@ -423,7 +423,7 @@ Expected: module `../rich-blocks` not found.
 
 import type { FunctionPlotOptions } from "function-plot";
 
-// d3 schemeCategory10 — legible on dark and light backgrounds.
+// d3 schemeCategory10 - legible on dark and light backgrounds.
 export const CURVE_COLORS: readonly string[] = [
   "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
   "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
@@ -508,7 +508,7 @@ function loadFunctionPlot(): Promise<typeof import("function-plot").default> {
 }
 
 // function-plot@1.x is CJS transpiled to ESM: depending on bundler interop the
-// import surfaces the plot function directly or a module object — walk .default
+// import surfaces the plot function directly or a module object - walk .default
 // at most twice.
 function unwrapFnPlot(m: unknown): typeof import("function-plot").default {
   let v: unknown = m;
@@ -608,10 +608,10 @@ export async function mountRichBlocks(root: HTMLElement): Promise<void> {
 
 Run: `npm test`
 
-- [ ] **Step 5: Add CSS** — append to `src/styles.css` (after the `#preview img` rule):
+- [ ] **Step 5: Add CSS** - append to `src/styles.css` (after the `#preview img` rule):
 
 ```css
-/* Rich preview blocks (columns, plots, mermaid) — console flavor */
+/* Rich preview blocks (columns, plots, mermaid) - console flavor */
 #preview .md-columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -631,7 +631,7 @@ Run: `npm test`
 #preview .plot svg {
   max-width: 100%;
 }
-/* function-plot draws axes black@0.1 — map to theme vars (console app.css:579) */
+/* function-plot draws axes black@0.1 - map to theme vars (console app.css:579) */
 #preview .plot svg .x.axis path.domain,
 #preview .plot svg .y.axis path.domain {
   stroke: var(--fg);
@@ -683,7 +683,7 @@ git commit -m "feat(preview): mount mermaid diagrams and function plots after sa
 - Consumes: `@tauri-apps/api/core` `convertFileSrc` (installed).
 - Produces (consumed by Task 5): `dirName(path: string): string`, `resolveImageSrc(raw: string, baseDir: string | null): string`, `resolveImages(root: ParentNode, baseDir: string | null): void`.
 
-- [ ] **Step 1: Write failing tests** — create `src/__tests__/images.test.ts`:
+- [ ] **Step 1: Write failing tests** - create `src/__tests__/images.test.ts`:
 
 ```ts
 // @vitest-environment jsdom
@@ -740,9 +740,9 @@ describe("resolveImages", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests, verify fail** — Run: `npm test` (module not found).
+- [ ] **Step 2: Run tests, verify fail** - Run: `npm test` (module not found).
 
-- [ ] **Step 3: Implement** — create `src/images.ts`:
+- [ ] **Step 3: Implement** - create `src/images.ts`:
 
 ```ts
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -774,9 +774,9 @@ export function resolveImages(root: ParentNode, baseDir: string | null): void {
 }
 ```
 
-- [ ] **Step 4: Run tests, verify green** — Run: `npm test`
+- [ ] **Step 4: Run tests, verify green** - Run: `npm test`
 
-- [ ] **Step 5: Enable the asset protocol** — in `src-tauri/tauri.conf.json` replace
+- [ ] **Step 5: Enable the asset protocol** - in `src-tauri/tauri.conf.json` replace
 
 ```json
     "security": { "csp": null }
@@ -797,10 +797,10 @@ with
     }
 ```
 
-In `src-tauri/capabilities/default.json` add `"asset:default"` to the `permissions` array. If the app errors at startup that the permission is unknown, run `npm run tauri dev` once and read the listed valid permission identifiers — the asset-protocol default set in the installed Tauri version wins; record the deviation in the commit body.
+In `src-tauri/capabilities/default.json` add `"asset:default"` to the `permissions` array. If the app errors at startup that the permission is unknown, run `npm run tauri dev` once and read the listed valid permission identifiers - the asset-protocol default set in the installed Tauri version wins; record the deviation in the commit body.
 
-- [ ] **Step 6: Verify backend still fine** — Run: `cd src-tauri; cargo test`
-Expected: pass (config-only change, but this catches schema typos early — a broken tauri.conf fails `cargo test`'s build of the app).
+- [ ] **Step 6: Verify backend still fine** - Run: `cd src-tauri; cargo test`
+Expected: pass (config-only change, but this catches schema typos early - a broken tauri.conf fails `cargo test`'s build of the app).
 
 - [ ] **Step 7: Commit**
 
@@ -822,7 +822,7 @@ git commit -m "feat(preview): resolve relative images via the asset protocol"
 - Consumes: `mountRichBlocks` (Task 3), `resolveImages`, `dirName` (Task 4).
 - Produces: `setPreviewBaseDir(path: string | null): void` exported from `src/preview.ts`; md renders now mount rich blocks.
 
-- [ ] **Step 1: Write failing test** — create `src/__tests__/preview-images.test.ts`:
+- [ ] **Step 1: Write failing test** - create `src/__tests__/preview-images.test.ts`:
 
 ```ts
 // @vitest-environment jsdom
@@ -856,9 +856,9 @@ describe("preview image resolution wiring", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests, verify fail** — Run: `npm test` (`setPreviewBaseDir` not exported).
+- [ ] **Step 2: Run tests, verify fail** - Run: `npm test` (`setPreviewBaseDir` not exported).
 
-- [ ] **Step 3: Implement** — in `src/preview.ts`:
+- [ ] **Step 3: Implement** - in `src/preview.ts`:
 
 Add imports (top, after existing):
 
@@ -896,9 +896,9 @@ In `src/main.ts`, extend the import from `./preview` with `setPreviewBaseDir`, a
   setPreviewBaseDir(meta.path ? dirName(meta.path) : null);
 ```
 
-`applyPreviewMode` runs on every tab switch, open, close, and Save As — the only paths where the active file changes — so the base dir never goes stale. `togglePreview` re-renders with the already-current base dir.
+`applyPreviewMode` runs on every tab switch, open, close, and Save As - the only paths where the active file changes - so the base dir never goes stale. `togglePreview` re-renders with the already-current base dir.
 
-- [ ] **Step 4: Run tests, verify green** — Run: `npm test`
+- [ ] **Step 4: Run tests, verify green** - Run: `npm test`
 
 - [ ] **Step 5: Commit**
 
@@ -917,9 +917,9 @@ git commit -m "feat(preview): wire rich blocks and image resolution into live re
 
 **Interfaces:** none (docs only).
 
-- [ ] **Step 1: README** — in the section describing the Markdown preview, extend the feature sentence to mention math (`$...$` / `$$...$$`), Mermaid diagrams, interactive function plots, columns, and image scaling (`{N%}`), plus that relative image paths resolve against the open file. Keep it to 1-2 sentences matching the existing README voice.
+- [ ] **Step 1: README** - in the section describing the Markdown preview, extend the feature sentence to mention math (`$...$` / `$$...$$`), Mermaid diagrams, interactive function plots, columns, and image scaling (`{N%}`), plus that relative image paths resolve against the open file. Keep it to 1-2 sentences matching the existing README voice.
 
-- [ ] **Step 2: CHANGELOG** — under `## [Unreleased]` → `### Added`:
+- [ ] **Step 2: CHANGELOG** - under `## [Unreleased]` → `### Added`:
 
 ```markdown
 - Markdown preview: KaTeX math (`$...$`, `$$...$$`), Mermaid diagrams, interactive function plots (` ```plot `), two-column layouts (` ```columns `), image scaling (`{N%}`), and relative image resolution against the open file
@@ -935,7 +935,7 @@ cd src-tauri; cargo test
 
 Expected: all green.
 
-- [ ] **Step 4: Manual smoke (dev run)** — `npm run tauri dev`, then with a scratch `test.md` verify: inline/block math; a ` ```mermaid\nflowchart TD\n  A --> B\n``` ` diagram; the spec's plot example (interactive pan/zoom); the same plot with a trailing comma (raw text + red error style); the spec's columns example; `![x](img.png){100%}`; a relative image next to an opened .md file actually displaying; theme flip re-themes mermaid and plot axes. Record results in the final report.
+- [ ] **Step 4: Manual smoke (dev run)** - `npm run tauri dev`, then with a scratch `test.md` verify: inline/block math; a ` ```mermaid\nflowchart TD\n  A --> B\n``` ` diagram; the spec's plot example (interactive pan/zoom); the same plot with a trailing comma (raw text + red error style); the spec's columns example; `![x](img.png){100%}`; a relative image next to an opened .md file actually displaying; theme flip re-themes mermaid and plot axes. Record results in the final report.
 
 - [ ] **Step 5: Commit**
 
@@ -951,7 +951,7 @@ git commit -m "docs: describe rich markdown preview additions"
 - `package.json`: katex, marked-katex-extension (Task 1), mermaid, function-plot (Task 3 Step 0) ✓.
 - `src-tauri/tauri.conf.json`: assetProtocol ✓ (Task 4). No new file associations needed.
 - `src-tauri/capabilities/default.json`: asset permission ✓ (Task 4).
-- `src-tauri/src/main.rs`: unchanged — no new commands.
-- `src/fileio.ts`: unchanged — no new IPC.
-- `index.html`: unchanged — no new dialogs.
+- `src-tauri/src/main.rs`: unchanged - no new commands.
+- `src/fileio.ts`: unchanged - no new IPC.
+- `index.html`: unchanged - no new dialogs.
 - README/CHANGELOG ✓ (Task 6).
