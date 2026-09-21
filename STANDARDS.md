@@ -133,7 +133,7 @@ Reviews (flat log, not per-feature):
 
 `multi-plan-orchestration` outlines and manifests also live inside the relevant `features/<topic>/` folder; there is no separate `multi-plans/` bucket.
 
-Historical `docs/artifacts/specs/`, `docs/artifacts/plans/`, and `docs/artifacts/multi-plans/` are being migrated into `features/<feature>/`. Do not add new files to the legacy buckets; create the new one in `features/` instead. Each artefact is append-only history; if a design changes mid-implementation, edit in place + add an `## Amendments` section. Filenames use the `YYYY-MM-DD-<kebab-topic>-<type>.md` grammar.
+Each artefact is append-only history; if a design changes mid-implementation, edit in place + add an `## Amendments` section. Filenames use the `YYYY-MM-DD-<kebab-topic>-<type>.md` grammar.
 
 ---
 

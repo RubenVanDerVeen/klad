@@ -47,7 +47,7 @@ Klad is a cross-platform Notepad replacement for Windows and Linux with live Mar
 | `docs/artifacts/reviews/` | Reviews and audits (flat log) |
 
 ## Artifacts
-`docs/artifacts/features/<feature>/` is canonical for specs/plans/reports (one folder per feature; suffix signals type: `-design`, `-plan`, `-outline`, `-manifest`, `-report`, `-review`, `-audit`). Reviews and audits live in the flat `docs/artifacts/reviews/` log; do not bury them inside a feature folder. Use `YYYY-MM-DD-<topic>-<type>.md`. Do not create `docs/superpowers/`, `.planning/`, or extra siblings under `docs/artifacts/`. If one lands anyway, `git rm` it. Historical `specs/`, `plans/`, and `multi-plans/` are being migrated into `features/<feature>/`; do not add new files to them.
+`docs/artifacts/features/<feature>/` is canonical for specs/plans/reports (one folder per feature; suffix signals type: `-design`, `-plan`, `-outline`, `-manifest`, `-report`, `-review`, `-audit`). Reviews and audits live in the flat `docs/artifacts/reviews/` log; do not bury them inside a feature folder. Use `YYYY-MM-DD-<topic>-<type>.md`. Do not create `docs/superpowers/`, `.planning/`, or extra siblings under `docs/artifacts/`. If one lands anyway, `git rm` it.
 
 ## Knowledge graph (graphify)
 `graphify-out/` holds a queryable AST-only code graph. If `graphify-out/graph.json` exists, query it before grep/glob/Read for architecture or cross-file questions with `graphify query`. Refresh with `graphify update .` when stale.

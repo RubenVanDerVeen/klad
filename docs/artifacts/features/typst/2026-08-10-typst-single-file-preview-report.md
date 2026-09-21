@@ -3,8 +3,8 @@
 - **Date:** 2026-08-10
 - **Branch:** `feat/typst-preview` (cut from `main`, 7 commits)
 - **Status:** **DONE - code + unit + integration green; SMOKE UNTESTED in the orchestrator's headless environment**
-- **Spec:** [`docs/artifacts/specs/typst/2026-08-10-typst-single-file-preview-design.md`](../../specs/typst/2026-08-10-typst-single-file-preview-design.md)
-- **Plan:** [`docs/artifacts/plans/typst/2026-08-10-typst-single-file-preview-plan.md`](../../plans/typst/2026-08-10-typst-single-file-preview-plan.md)
+- **Spec:** [`docs/artifacts/features/typst/2026-08-10-typst-single-file-preview-design.md`](2026-08-10-typst-single-file-preview-design.md)
+- **Plan:** [`docs/artifacts/features/typst/2026-08-10-typst-single-file-preview-plan.md`](2026-08-10-typst-single-file-preview-plan.md)
 
 ## Goal
 
