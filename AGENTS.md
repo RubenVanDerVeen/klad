@@ -10,7 +10,7 @@ Klad is a cross-platform Notepad replacement for Windows and Linux with live Mar
 - **Backend:** Rust 2021 in `src-tauri/`; Tauri commands are registered in `main.rs`.
 - **Encoding:** editor buffers are always LF-normalized; EOL conversion happens only during save.
 - **Labels:** encoding labels cross the Rust/TypeScript boundary verbatim.
-- **Preview:** Markdown uses `marked` + `dompurify`; Typst uses embedded compilation and SVG output.
+- **Preview:** Markdown uses `marked` + `dompurify`; Typst uses embedded compilation and SVG output; CSV renders a table via `src/csv.ts` (frontend parse, no IPC).
 - **UI:** native DOM and `<dialog>`; do not introduce React or Svelte.
 - **Tests:** `npm test` and `cd src-tauri && cargo test`.
 
