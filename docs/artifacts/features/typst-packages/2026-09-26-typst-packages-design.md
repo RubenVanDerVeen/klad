@@ -17,7 +17,7 @@ fails today. Users expect typst CLI semantics: `@preview` packages fetched from 
 ## 2. Goals
 
 1. `#import "@preview/<name>:<version>"` works in the live preview: resolved from local package dirs, then the on-disk cache, then downloaded once from packages.typst.org and cached.
-2. Local packages work: any namespace (typst convention: `@local`, plus custom namespaces) resolved from the standard package data dir — Linux `~/.local/share/typst/packages` (+ `$XDG_DATA_DIRS`), Windows `%APPDATA%\typst\packages`.
+2. Local packages work: any namespace (typst convention: `@local`, plus custom namespaces) resolved from the standard package data dir — Linux `$XDG_DATA_HOME/typst/packages` else `~/.local/share/typst/packages` (single path via `dirs::data_dir()`, no `$XDG_DATA_DIRS` multi-search), Windows `%APPDATA%\typst\packages`.
 3. Download cache is the same directory the typst CLI uses (Linux `~/.cache/typst/packages`, Windows cache dir equivalent), so CLI and klad share packages.
 4. Failures surface as clean typst compile errors in the existing preview banner — never a panic, never a hang past the request.
 5. Zero frontend changes.
