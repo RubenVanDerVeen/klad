@@ -6,29 +6,44 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ---
 
-## [Unreleased]
-
-Work in progress for upcoming milestones.
+## [0.5.0] - 2026-09-19
 
 ### Added
+- Markdown preview: KaTeX math (`$...$`, `$$...$$`), Mermaid diagrams, interactive function plots (` ```plot `), two-column layouts (` ```columns `), image scaling (`{N%}`), relative image resolution against the open file, and YAML frontmatter rendered as a table
 
-- **Typst single-file live preview** — `.typ` and `.typst` files render a live SVG preview via embedded `typst` compile (single-file only: no `#include`/`#import`, no `@preview` packages, no system fonts). Auto-toggles alongside the existing Markdown preview; error banner shows compile errors while keeping the last-good render.
-- **CSV table preview** — opening a `.csv` file renders the buffer as a table with auto-detected delimiter (`,;\t|`), quoted-field support, and a 5,000-row preview cap.
+## [Unreleased]
+
+### Added
+- CSV table preview - opening a `.csv` file renders the buffer as a table with auto-detected delimiter (`,;\t|`), quoted-field support, and a 5,000-row preview cap
+
+## [0.5.0] - 2026-09-19
+
+### Added
+- Markdown preview: KaTeX math (`$...$`, `$$...$$`), Mermaid diagrams, interactive function plots (` ```plot `), two-column layouts (` ```columns `), image scaling (`{N%}`), relative image resolution against the open file, and YAML frontmatter rendered as a table
+
+## [0.4.0] - 2026-09-16
+
+### Added
+- **Typst single-file live preview** - `.typ` and `.typst` files render a live SVG preview via embedded `typst` compile (single-file only: no `#include`/`#import`, no `@preview` packages, no system fonts). Auto-toggles alongside the existing Markdown preview; error banner shows compile errors while keeping the last-good render.
+
+### Fixed
+- Dark-mode selection and caret contrast in the editor.
+- Typst error banner no longer appears on Markdown tabs.
 
 ---
 
-## [0.3.0]: 2026-08-02
+## [0.3.0] - 2026-08-02
 
 First tagged release (`v*` tag triggers CI to build Windows + Linux artifacts). Supersedes the untagged 0.2.0 version-string bump. Major shift from single-file to multi-tab editing.
 
 ### Added
 
-- **Multi-tab editing** — multiple files open in one window with a tab bar; per-tab close with dirty-confirm; Next/Previous Tab cycling (`Ctrl+Tab` / `Ctrl+Shift+Tab`); Tabs menu.
-- **Session restore** — unsaved untitled notes and unsaved edits to named files survive close/reopen, stashed inside Klad (never written to disk). Dirty buffers restore dirty; clean named files re-read from disk.
-- **Hot exit** — closing the window silently stashes every dirty buffer, no save prompt. Per-tab close (`Ctrl+W`) keeps the classic prompt.
-- **Restore on file-arg launch** — double-clicking a file when Klad isn't running opens it alongside the restored session, matching the already-running behavior.
-- **Single-instance mode** — a second launch forwards its file path to the running instance and exits; no duplicate windows.
-- **Dark theme** — light/dark preference with a View menu toggle (`Ctrl+Shift+L`); theme-aware CSS across editor, dialogs, and preview.
+- **Multi-tab editing** - multiple files open in one window with a tab bar; per-tab close with dirty-confirm; Next/Previous Tab cycling (`Ctrl+Tab` / `Ctrl+Shift+Tab`); Tabs menu.
+- **Session restore** - unsaved untitled notes and unsaved edits to named files survive close/reopen, stashed inside Klad (never written to disk). Dirty buffers restore dirty; clean named files re-read from disk.
+- **Hot exit** - closing the window silently stashes every dirty buffer, no save prompt. Per-tab close (`Ctrl+W`) keeps the classic prompt.
+- **Restore on file-arg launch** - double-clicking a file when Klad isn't running opens it alongside the restored session, matching the already-running behavior.
+- **Single-instance mode** - a second launch forwards its file path to the running instance and exits; no duplicate windows.
+- **Dark theme** - light/dark preference with a View menu toggle (`Ctrl+Shift+L`); theme-aware CSS across editor, dialogs, and preview.
 - Redesigned app icon (K document glyph).
 
 ### Fixed
@@ -39,7 +54,7 @@ First tagged release (`v*` tag triggers CI to build Windows + Linux artifacts). 
 
 ---
 
-## [0.1.0]: 2026-07-17
+## [0.1.0] - 2026-07-17
 
 Initial release: cross-platform Notepad replacement with live Markdown preview (Tauri 2 + CodeMirror 6).
 
@@ -54,5 +69,7 @@ Initial release: cross-platform Notepad replacement with live Markdown preview (
 ---
 
 [Unreleased]: #unreleased
-[0.3.0]: #0302026-08-02
-[0.1.0]: #01102026-07-17
+[0.3.0]: #030---2026-08-02
+[0.1.0]: #010---2026-07-17
+[0.4.0]: #040---2026-09-16
+[0.5.0]: #050---2026-09-19

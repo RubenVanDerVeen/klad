@@ -18,8 +18,10 @@ Klad is a cross-platform Notepad replacement for Windows and Linux with live Mar
 - Repo: `https://github.com/RubenVanDerVeen/klad.git`
 - **No commit/push without explicit user instruction.**
 - **Carve-out:** with an approved spec and plan under `docs/artifacts/features/<feature>/`, plan execution may commit at specified task or phase boundaries.
-- Default to `feat/<scope>` for non-trivial features; small fixes and docs may use the default branch.
+- Default to a feature branch for non-trivial features and plan execution: `feat/<scope>`, `fix/<scope>`, or `chore/<scope>` (Conventional Branch 1.1.0); each plan runs in its own branch cut from the default branch. Small fixes and docs-only edits may land directly on the default branch.
 - Commit messages use Conventional Commits 1.0.0.
+- Tracked `commit-msg` hook at `.githooks/commit-msg` enforces Conventional Commits. Activate per clone with `git config core.hooksPath .githooks`. Emergency bypass: `git commit --no-verify`.
+- **Bundle related changes into a single commit.** One logical change = one commit; never commit per tweak.
 - Changelog uses Keep a Changelog 1.1.0; releases use SemVer 2.0.0.
 
 ### Versioning
@@ -27,7 +29,7 @@ Klad is a cross-platform Notepad replacement for Windows and Linux with live Mar
 - **Sync targets:** `package.json` -> `version`, `src-tauri/Cargo.toml` -> `[package].version`.
 - **Policy:** SemVer 2.0.0; release policy is defined by the project-standardization versioning reference.
 - **Trigger:** release cutting is deliberate and updates `[Unreleased]` in `CHANGELOG.md`.
-- **Last release:** `v0.3.0` - 2026-08-02.
+- **Last release:** `v0.5.0` - 2026-09-19.
 
 ## Components
 | Area | Location | Purpose |
@@ -41,10 +43,11 @@ Klad is a cross-platform Notepad replacement for Windows and Linux with live Mar
 | File | Purpose |
 |------|---------|
 | `.agents/todolist.md` | Pending improvements |
-| `docs/artifacts/features/` | Specs, plans, reports, and reviews (one folder per feature) |
+| `docs/artifacts/features/` | Specs, plans, reports (one folder per feature) |
+| `docs/artifacts/reviews/` | Reviews and audits (flat log) |
 
 ## Artifacts
-Only `docs/artifacts/features/<feature>/` is canonical. Each feature folder holds its spec (`-design.md`), plan (`-plan.md`), report (`-report.md`), and any reviews. Use `YYYY-MM-DD-<topic>-<type>.md`. Do not create `docs/superpowers/`, `.planning/`, or extra siblings under `docs/artifacts/`. Historical `specs/`, `plans/`, `multi-plans/`, and stray `reviews/` items are being migrated into `features/<feature>/`; do not add new files to them.
+`docs/artifacts/features/<feature>/` is canonical for specs/plans/reports (one folder per feature; suffix signals type: `-design`, `-plan`, `-outline`, `-manifest`, `-report`, `-review`, `-audit`). Reviews and audits live in the flat `docs/artifacts/reviews/` log; do not bury them inside a feature folder. Use `YYYY-MM-DD-<topic>-<type>.md`. Do not create `docs/superpowers/`, `.planning/`, or extra siblings under `docs/artifacts/`. If one lands anyway, `git rm` it.
 
 ## Knowledge graph (graphify)
 `graphify-out/` holds a queryable AST-only code graph. If `graphify-out/graph.json` exists, query it before grep/glob/Read for architecture or cross-file questions with `graphify query`. Refresh with `graphify update .` when stale.

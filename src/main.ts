@@ -1,3 +1,4 @@
+import "katex/dist/katex.min.css";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { gotoLine, openSearchPanel } from "@codemirror/search";
@@ -13,6 +14,7 @@ import { initStatusBar, setCursor, setEncoding, setEol, setZoomDisplay } from ".
 import {
   isPreviewVisible,
   renderPreviewNow,
+  setPreviewBaseDir,
   setPreviewKind,
   setPreviewVisible,
   syncPreviewScroll,
@@ -31,6 +33,7 @@ import {
   TabState,
 } from "./tabs";
 import { initTabBar, renderTabs, TabView } from "./tabbar";
+import { dirName } from "./images";
 
 const FILTERS = [
   { name: "Text files", extensions: ["txt", "md", "markdown", "log", "ini", "cfg", "typ", "typst", "csv"] },
@@ -193,6 +196,7 @@ function applyPreviewMode(): void {
   // setPreviewKind must run before renderPreviewNow so the sync 'md' branch
   // dispatches correctly. For 'typ' the kind is read inside the async branch.
   setPreviewKind(kind ?? "md");
+  setPreviewBaseDir(meta.path ? dirName(meta.path) : null);
   if (kind) renderPreviewNow(getText(activeTab().view));
   void menuHandles?.previewItem.setChecked(kind !== null);
 }
@@ -478,7 +482,7 @@ void (async () => {
   // Always restore the saved session (untitled notes + previously opened files),
   // then open the OS-provided startup file alongside it. openPath dedups by path,
   // so if the startup file is already in the session it just switches to it.
-  // See docs/artifacts/specs/restore-on-launch/2026-08-02-restore-on-launch-design.md
+  // See docs/artifacts/features/restore-on-launch/2026-08-02-restore-on-launch-design.md
   // (supersedes the old tabs-§8 "skip restore on file arg" rule).
   await restoreSessionOrNew();
   if (startupFile) {

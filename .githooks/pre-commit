@@ -1,0 +1,113 @@
+#!/bin/sh
+# pre-commit hook: enforce repo doc standards on staged files.
+# Checks: em-dash ban, SKILL.md standards, catalog sync, forbidden paths.
+# ponytail: eight grep checks, no dependencies. Ceiling: validates staged
+# content only, word-splits path lists (safe: kebab-case rule bans spaces in
+# paths), and treats a repo's very first commit as a new-skill commit.
+# Re-verify with the matrix in the feature plan if a check changes.
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+fail=0
+
+reject() {
+  printf 'pre-commit: rejected by %s\n  file: %s\n  rule: %s\n' "$1" "$2" "$3" >&2
+  fail=1
+}
+
+# U+2014 as UTF-8 bytes; octal escapes are POSIX, no literal char in this file.
+EM_DASH=$(printf '\342\200\224')
+
+# SKILL.md checks (P2 name, P3 description, P4 size, P5 headings).
+check_skill_md() {
+  f=$1
+  content=$(git show ":$f")
+  first=$(printf '%s\n' "$content" | head -n 1)
+  if [ "$first" != "---" ]; then
+    reject "P2 frontmatter" "$f" "SKILL.md must start with YAML frontmatter (---)"
+    return
+  fi
+  fm=$(printf '%s\n' "$content" | sed -n '2,/^---$/p' | sed '$d')
+
+  name=$(printf '%s\n' "$fm" | sed -n 's/^name:[[:space:]]*//p' | head -n 1)
+  folder=$(basename "$(dirname "$f")")
+  if [ -z "$name" ]; then
+    reject "P2 name" "$f" "missing name in frontmatter"
+  else
+    if ! printf '%s\n' "$name" | grep -qE '^[a-z0-9-]+$'; then
+      reject "P2 name" "$f" "name '$name' must be kebab-case (letters, digits, hyphens only)"
+    fi
+    if [ "$name" != "$folder" ]; then
+      case "$f" in
+        # Sanctioned legacy exception (AGENTS.md: backwards compatibility).
+        skills/rubens-project-standardization/*) ;;
+        *) reject "P2 name" "$f" "name '$name' must match folder '$folder'" ;;
+      esac
+    fi
+  fi
+
+  desc=$(printf '%s\n' "$fm" | sed -n 's/^description:[[:space:]]*//p' | head -n 1)
+  desc=${desc#\"}
+  case "$desc" in
+    "Use when"*) ;;
+    *) reject "P3 description" "$f" "description must start with 'Use when'" ;;
+  esac
+
+  fm_len=$(printf '%s' "$fm" | wc -c)
+  if [ "$fm_len" -gt 1024 ]; then
+    reject "P4 frontmatter-size" "$f" "frontmatter is $fm_len bytes (max 1024)"
+  fi
+
+  if printf '%s\n' "$content" | grep -qE '^## Skill[[:space:]]*$'; then
+    reject "P5 skill-heading" "$f" "no top-level '## Skill' heading; body starts with '## Overview'"
+  fi
+  if ! printf '%s\n' "$content" | grep -q '^## Overview'; then
+    reject "P5 overview" "$f" "body must contain an '## Overview' heading"
+  fi
+}
+
+# P1: no em-dashes in staged markdown (index content, not worktree).
+for f in $staged; do
+  case "$f" in
+    *.md)
+      if git show ":$f" | grep -qF "$EM_DASH"; then
+        reject "P1 em-dash" "$f" "U+2014 found; use comma, colon, parentheses, or hyphen"
+      fi
+      ;;
+  esac
+done
+
+# P2..P5: SKILL.md standards.
+for f in $staged; do
+  case "$f" in
+    skills/*/SKILL.md) check_skill_md "$f" ;;
+  esac
+done
+
+# P6: a brand-new skill must land with both catalog rows (same commit).
+for f in $staged; do
+  case "$f" in
+    skills/*/SKILL.md)
+      if ! git cat-file -e "HEAD:$f" 2>/dev/null; then
+        folder=$(basename "$(dirname "$f")")
+        git show ":README.md" | grep -q "skills/$folder/" || \
+          reject "P6 catalog-sync" "$f" "new skill missing from README.md ## Skills table"
+        git show ":AGENTS.md" | grep -q "skills/$folder/" || \
+          reject "P6 catalog-sync" "$f" "new skill missing from AGENTS.md ## Current skills table"
+      fi
+      ;;
+  esac
+done
+
+# P7: forbidden directories, any depth.
+for f in $staged; do
+  case "$f" in
+    temp/*|*/temp/*|old/*|*/old/*|archive/*|*/archive/*|docs/superpowers/*|.planning/*)
+      reject "P7 forbidden-path" "$f" "no temp/, old/, archive/, docs/superpowers/, or .planning/ paths" ;;
+  esac
+done
+
+if [ "$fail" -ne 0 ]; then
+  printf '\nBypass (emergencies only): git commit --no-verify\n' >&2
+  exit 1
+fi
+exit 0
