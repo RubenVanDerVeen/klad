@@ -191,7 +191,6 @@ fn format_diag(world: &SingleFileWorld, d: &SourceDiagnostic) -> TypstError {
 /// `async` = run this sync body on the blocking threadpool: a plain sync
 /// command executes inline on the IPC/main thread in Tauri 2, and a first-use
 /// package download would freeze the whole window. invoke() is unchanged.
-/// (Keep the existing `#[allow(dead_code)]` line above if one is there.)
 #[tauri::command(async)]
 #[allow(dead_code)] // Tauri generates a parallel command wrapper; this symbol is reachable only via invoke_handler
 pub fn compile_typst(text: String) -> Result<TypstResult, String> {

@@ -15,6 +15,9 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ### Added
 - CSV table preview - opening a `.csv` file renders the buffer as a table with auto-detected delimiter (`,;\t|`), quoted-field support, and a 5,000-row preview cap
+- Typst live preview now resolves `@preview` packages (downloaded from
+  packages.typst.org on first use and cached, shared with the typst CLI)
+  and local packages from the standard typst package directories.
 
 ## [0.5.0] - 2026-09-19
 
