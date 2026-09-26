@@ -87,7 +87,10 @@ fn system_packages() -> SystemPackages {
     SystemPackages::from_parts(
         FsPackages::system_data(),
         FsPackages::system_cache(),
-        UniversePackages::new(SystemDownloader::new(concat!("klad/", env!("CARGO_PKG_VERSION")))),
+        UniversePackages::new(SystemDownloader::new(concat!(
+            "klad/",
+            env!("CARGO_PKG_VERSION")
+        ))),
     )
 }
 
@@ -310,7 +313,7 @@ mod tests {
     fn compiles_trivial_doc() {
         let r = compile_typst("#set page(width: 40pt)\nHi".into()).unwrap();
         assert!(r.errors.is_empty(), "unexpected errors: {:?}", r.errors);
-        assert!(r.pages.len() >= 1, "expected at least one page");
+        assert!(!r.pages.is_empty(), "expected at least one page");
         assert!(
             r.pages[0].contains("<svg"),
             "page should be an SVG: {}",
