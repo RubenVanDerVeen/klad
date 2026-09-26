@@ -29,6 +29,8 @@ use typst::syntax::Source;
 use typst::text::{Font, FontBook};
 use typst::utils::LazyHash;
 use typst::{LibraryExt, World, WorldExt};
+use typst_kit::downloader::SystemDownloader;
+use typst_kit::packages::{FsPackages, SystemPackages, UniversePackages};
 
 #[derive(Debug, Serialize)]
 pub struct TypstError {
@@ -49,19 +51,44 @@ pub struct TypstResult {
 /// `fonts()` cache holds the actual `Vec<Font>` (shared by every instance).
 struct SingleFileWorld {
     source: Source,
+    packages: SystemPackages,
     library: OnceLock<LazyHash<typst::Library>>,
     book: OnceLock<LazyHash<FontBook>>,
 }
 
 impl SingleFileWorld {
     // klad's editor buffer is already LF-normalized (AGENTS.md); no CRLF here.
-    fn new(text: &str) -> Self {
+    fn with_packages(text: String, packages: SystemPackages) -> Self {
         Self {
             source: Source::detached(text),
+            packages,
             library: OnceLock::new(),
             book: OnceLock::new(),
         }
     }
+
+    /// Read one file out of a package, obtaining (downloading if needed)
+    /// the package directory first.
+    // ponytail: re-reads package files from disk every compile; fine at
+    // human typing rates — add an in-memory cache only if preview feels slow.
+    fn package_file(
+        &self,
+        id: typst::syntax::FileId,
+        spec: &typst::syntax::package::PackageSpec,
+    ) -> Result<Bytes, typst::diag::FileError> {
+        let root = self.packages.obtain(spec)?;
+        root.load(id.vpath())
+    }
+}
+
+/// Package lookup matching the typst CLI: OS data dir, OS cache dir, then
+/// download from packages.typst.org for the `preview` namespace.
+fn system_packages() -> SystemPackages {
+    SystemPackages::from_parts(
+        FsPackages::system_data(),
+        FsPackages::system_cache(),
+        UniversePackages::new(SystemDownloader::new(concat!("klad/", env!("CARGO_PKG_VERSION")))),
+    )
 }
 
 // ponytail: OnceLock rather than LazyLock — `world` instances are short-lived
@@ -101,22 +128,33 @@ impl World for SingleFileWorld {
 
     fn source(&self, id: typst::syntax::FileId) -> typst::diag::FileResult<Source> {
         if id == self.source.id() {
-            Ok(self.source.clone())
-        } else {
-            Err(typst::diag::FileError::NotFound(PathBuf::from(
-                id.vpath().get_with_slash(),
-            )))
+            return Ok(self.source.clone());
         }
+
+        if let typst::syntax::VirtualRoot::Package(spec) = id.root() {
+            let bytes = self.package_file(id, spec)?;
+            let text = String::from_utf8(bytes.to_vec())
+                .map_err(|_| typst::diag::FileError::InvalidUtf8)?;
+            return Ok(Source::new(id, text));
+        }
+
+        Err(typst::diag::FileError::NotFound(PathBuf::from(
+            id.vpath().get_with_slash(),
+        )))
     }
 
     fn file(&self, id: typst::syntax::FileId) -> typst::diag::FileResult<Bytes> {
         if id == self.source.id() {
-            Ok(Bytes::from_string(self.source.text().to_string()))
-        } else {
-            Err(typst::diag::FileError::NotFound(PathBuf::from(
-                id.vpath().get_with_slash(),
-            )))
+            return Ok(Bytes::from_string(self.source.text().to_string()));
         }
+
+        if let typst::syntax::VirtualRoot::Package(spec) = id.root() {
+            return self.package_file(id, spec);
+        }
+
+        Err(typst::diag::FileError::NotFound(PathBuf::from(
+            id.vpath().get_with_slash(),
+        )))
     }
 
     fn font(&self, index: usize) -> Option<Font> {
@@ -150,10 +188,21 @@ fn format_diag(world: &SingleFileWorld, d: &SourceDiagnostic) -> TypstError {
     TypstError { message, line }
 }
 
-#[tauri::command]
+/// `async` = run this sync body on the blocking threadpool: a plain sync
+/// command executes inline on the IPC/main thread in Tauri 2, and a first-use
+/// package download would freeze the whole window. invoke() is unchanged.
+/// (Keep the existing `#[allow(dead_code)]` line above if one is there.)
+#[tauri::command(async)]
 #[allow(dead_code)] // Tauri generates a parallel command wrapper; this symbol is reachable only via invoke_handler
 pub fn compile_typst(text: String) -> Result<TypstResult, String> {
-    let world = SingleFileWorld::new(&text);
+    compile_with_packages(text, system_packages())
+}
+
+fn compile_with_packages(
+    text: String,
+    packages: SystemPackages,
+) -> Result<TypstResult, String> {
+    let world = SingleFileWorld::with_packages(text, packages);
     let warned = typst::compile::<typst_layout::PagedDocument>(&world);
     // Warnings are out-of-band; v1 banner shows errors only. Surfacing
     // warnings can land in a later polish slice.
@@ -181,6 +230,82 @@ pub fn compile_typst(text: String) -> Result<TypstResult, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::any::Any;
+    use std::io::{ErrorKind, Read};
+    use std::path::{Path, PathBuf};
+    use typst_kit::downloader::Downloader;
+    use typst_kit::packages::{FsPackages, SystemPackages, UniversePackages};
+
+    /// Downloader that never touches the network — tests must not download.
+    struct NoNetwork;
+
+    impl Downloader for NoNetwork {
+        fn stream(
+            &self,
+            _key: &dyn Any,
+            _url: &str,
+        ) -> std::io::Result<(Option<usize>, Box<dyn Read>)> {
+            Err(std::io::Error::new(ErrorKind::NotFound, "no network in tests"))
+        }
+    }
+
+    /// Packages with a temp data dir, no cache dir, and a dead universe URL.
+    /// FsPackages' root is the "packages" dir itself (mirrors
+    /// `FsPackages::system_data()` passing `data_dir.join("typst/packages")`).
+    fn test_packages(data_dir: &Path) -> SystemPackages {
+        SystemPackages::from_parts(
+            Some(FsPackages::new(data_dir.join("typst/packages"))),
+            None,
+            UniversePackages::with_url(NoNetwork, "http://127.0.0.1:9"),
+        )
+    }
+
+    /// Create `<tmp>/typst/packages/local/tiny/0.1.0/` with a minimal package.
+    fn fixture_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir()
+            .join(format!("klad-typst-pkg-{}-{name}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let pkg = dir.join("typst/packages/local/tiny/0.1.0");
+        std::fs::create_dir_all(&pkg).unwrap();
+        std::fs::write(
+            pkg.join("typst.toml"),
+            "[package]\nname = \"tiny\"\nversion = \"0.1.0\"\nentrypoint = \"lib.typ\"\n",
+        )
+        .unwrap();
+        std::fs::write(pkg.join("lib.typ"), "#let greeting = \"hello package\"\n").unwrap();
+        dir
+    }
+
+    #[test]
+    fn imports_local_package() {
+        let dir = fixture_dir("local");
+        let r = compile_with_packages(
+            "#import \"@local/tiny:0.1.0\": greeting\n#greeting".to_string(),
+            test_packages(&dir),
+        )
+        .unwrap();
+        assert!(r.errors.is_empty(), "errors: {:?}", r.errors);
+        assert_eq!(r.pages.len(), 1);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn missing_package_is_clean_error() {
+        let dir = fixture_dir("missing");
+        let r = compile_with_packages(
+            "#import \"@local/missing:9.9.9\": x".to_string(),
+            test_packages(&dir),
+        )
+        .unwrap();
+        assert!(!r.errors.is_empty());
+        assert!(r.pages.is_empty());
+        assert!(
+            r.errors[0].message.to_lowercase().contains("package"),
+            "message: {}",
+            r.errors[0].message
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
 
     #[test]
     fn compiles_trivial_doc() {

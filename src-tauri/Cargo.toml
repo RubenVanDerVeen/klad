@@ -18,6 +18,7 @@ typst = "0.15.1"
 typst-assets = { version = "0.15.1", features = ["fonts"] }
 typst-svg = "0.15.1"
 typst-layout = "0.15.1"
+typst-kit = { version = "0.15.1", features = ["system-packages", "universe-packages", "system-downloader"] }
 
 [profile.release]
 strip = true
