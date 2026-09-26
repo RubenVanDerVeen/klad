@@ -33,7 +33,7 @@ import {
 import { initTabBar, renderTabs, TabView } from "./tabbar";
 
 const FILTERS = [
-  { name: "Text files", extensions: ["txt", "md", "markdown", "log", "ini", "cfg", "typ", "typst"] },
+  { name: "Text files", extensions: ["txt", "md", "markdown", "log", "ini", "cfg", "typ", "typst", "csv"] },
   { name: "All files", extensions: ["*"] },
 ];
 
@@ -183,12 +183,16 @@ function isTypst(m: DocMeta): boolean {
   return /\.(typ|typst)$/i.test(m.path ?? "");
 }
 
+function isCsv(m: DocMeta): boolean {
+  return /\.csv$/i.test(m.path ?? "");
+}
+
 function applyPreviewMode(): void {
-  const kind: "md" | "typ" | null = isMarkdown(meta) ? "md" : isTypst(meta) ? "typ" : null;
+  const kind: "md" | "typ" | "csv" | null = isMarkdown(meta) ? "md" : isTypst(meta) ? "typ" : isCsv(meta) ? "csv" : null;
   setPreviewVisible(kind !== null);
   // setPreviewKind must run before renderPreviewNow so the sync 'md' branch
   // dispatches correctly. For 'typ' the kind is read inside the async branch.
-  setPreviewKind(kind === "typ" ? "typ" : "md");
+  setPreviewKind(kind ?? "md");
   if (kind) renderPreviewNow(getText(activeTab().view));
   void menuHandles?.previewItem.setChecked(kind !== null);
 }

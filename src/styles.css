@@ -158,6 +158,11 @@ dialog {
 #preview img {
   max-width: 100%;
 }
+#preview .csv-note {
+  opacity: 0.7;
+  font-size: 0.85em;
+  margin-top: 4px;
+}
 
 /* Tab bar */
 #tabbar {

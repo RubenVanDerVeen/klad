@@ -1,5 +1,6 @@
 import { renderMarkdown } from "./render";
 import { compileTypst, type TypstError, type TypstResult } from "./fileio";
+import { parseCsv, sniffDelimiter } from "./csv";
 
 export function debounce<T extends unknown[]>(
   fn: (...args: T) => void,
@@ -18,7 +19,7 @@ function pane(): HTMLElement {
 
 // --- preview-kind state ---------------------------------------------------
 
-export type PreviewKind = "md" | "typ";
+export type PreviewKind = "md" | "typ" | "csv";
 let previewKind: PreviewKind = "md";
 
 export function setPreviewKind(kind: PreviewKind): void {
@@ -101,6 +102,11 @@ async function renderTypstNow(text: string): Promise<void> {
 
 export function renderPreviewNow(text: string): void {
   if (!visible) return;
+  if (previewKind === "csv") {
+    hideErrorBanner();
+    pane().innerHTML = renderCsvTable(text);
+    return;
+  }
   if (previewKind === "typ") {
     void renderTypstNow(text); // fire-and-forget; race-guarded internally
     return;
@@ -127,4 +133,47 @@ export function syncPreviewScroll(scroller: HTMLElement): void {
   const previewMax = p.scrollHeight - p.clientHeight;
   if (previewMax <= 0) return;
   p.scrollTop = ratio * previewMax;
+}
+
+// --- csv table render -----------------------------------------------------
+
+const MAX_CSV_ROWS = 5000;
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderCsvTable(text: string): string {
+  const rows = parseCsv(text, sniffDelimiter(text));
+  if (rows.length === 0) return "";
+  const cols = rows.reduce((m, r) => Math.max(m, r.length), 0);
+  const pad = (r: string[]): string[] => {
+    const out = r.slice(0, cols);
+    while (out.length < cols) out.push("");
+    return out;
+  };
+  const head = pad(rows[0]!);
+  const body = rows.slice(1);
+  let html =
+    "<table><thead><tr>" +
+    head.map((h) => `<th>${escapeHtml(h)}</th>`).join("") +
+    "</tr></thead><tbody>";
+  for (const row of body.slice(0, MAX_CSV_ROWS)) {
+    html +=
+      "<tr>" +
+      pad(row)
+        .map((cell) => `<td>${escapeHtml(cell)}</td>`)
+        .join("") +
+      "</tr>";
+  }
+  html += "</tbody></table>";
+  if (body.length > MAX_CSV_ROWS) {
+    html += `<p class="csv-note">… ${(body.length - MAX_CSV_ROWS).toLocaleString()} more rows (preview truncated)</p>`;
+  }
+  return html;
 }
