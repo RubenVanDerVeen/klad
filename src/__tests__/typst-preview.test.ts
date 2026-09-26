@@ -4,9 +4,10 @@ import { pickRender } from "../preview";
 // previewKindForPath stays local here (it mirrors src/main.ts's isMarkdown/isTypst
 // derivation; main.ts doesn't export it). The contract under test is the
 // extension-to-kind mapping itself.
-function previewKindForPath(path: string | null): "md" | "typ" | null {
+function previewKindForPath(path: string | null): "md" | "typ" | "csv" | null {
   if (/\.(md|markdown)$/i.test(path ?? "")) return "md";
   if (/\.(typ|typst)$/i.test(path ?? "")) return "typ";
+  if (/\.csv$/i.test(path ?? "")) return "csv";
   return null;
 }
 
@@ -49,5 +50,14 @@ describe("previewKindForPath", () => {
   it("does not confuse .typst with other dotfiles", () => {
     // .typst.bak is not a typst file — extension must be exactly .typ or .typst
     expect(previewKindForPath("foo.typst.bak")).toBeNull();
+  });
+
+  it("routes .csv to the csv kind", () => {
+    expect(previewKindForPath("data.csv")).toBe("csv");
+    expect(previewKindForPath("DATA.CSV")).toBe("csv");
+  });
+
+  it("does not treat .csv-in-name as csv", () => {
+    expect(previewKindForPath("backup.csv.bak")).toBe(null);
   });
 });
