@@ -27,6 +27,7 @@ export function getStartupFile(): Promise<string | null> {
 export interface TypstError {
   message: string;
   line?: number | null;
+  file?: string | null;
 }
 
 export interface TypstResult {
@@ -34,8 +35,23 @@ export interface TypstResult {
   errors: TypstError[];
 }
 
-export function compileTypst(text: string): Promise<TypstResult> {
-  return invoke<TypstResult>("compile_typst", { text });
+export function compileTypst(
+  text: string,
+  path: string | null,
+  root: string | null,
+  overrides: Record<string, string>,
+): Promise<TypstResult> {
+  return invoke<TypstResult>("compile_typst", { text, path, root, overrides });
+}
+
+export interface DirEntry {
+  name: string;
+  path: string;
+  isDir: boolean;
+}
+
+export function listDir(path: string): Promise<DirEntry[]> {
+  return invoke<DirEntry[]>("list_dir", { path });
 }
 
 /**

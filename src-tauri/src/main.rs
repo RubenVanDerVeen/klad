@@ -32,6 +32,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             fs_cmds::read_file,
             fs_cmds::save_file,
+            fs_cmds::list_dir,
             fs_cmds::get_startup_file,
             typst_compile::compile_typst
         ])

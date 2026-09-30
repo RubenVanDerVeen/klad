@@ -9,6 +9,7 @@ Simple cross-platform Notepad replacement (Windows + Linux) with live Markdown p
 - Encodings: UTF-8 (±BOM), UTF-16 LE/BE, legacy (windows-125x); CRLF/LF switching
 - Live split Markdown preview (GFM) for `.md` files - KaTeX math (`$...$` / `$$...$$`), Mermaid diagrams, interactive function plots (` ```plot `), two-column layouts (` ```columns `), image scaling (`{N%}`), relative image paths resolved against the open file, and YAML frontmatter rendered as a table
 - Live Typst preview (embedded `typst` compile, SVG per page) for `.typ`/`.typst` files - full package support (`@preview` download + local packages), see [Typst preview](#typst-preview)
+- Multi-file projects via `File > Open Folder…` - sidebar file tree; Typst `#import`/`#include` and assets (e.g. `#image`) resolve against the folder, including unsaved edits in other tabs
 - Live CSV table preview for `.csv` files (delimiter auto-detected, first row as header)
 - Opens anything Notepad opens: `.txt` `.md` `.log` `.ini` `.cfg` `.typ` `.typst` `.csv`
 
@@ -68,8 +69,8 @@ clean error in the preview banner.
 
 ### Limitations
 
-- No relative imports/includes of files next to the open document - the
-  preview compiles the editor buffer only.
+- Without an opened folder, no relative imports/includes of files next to
+  the open document - the preview compiles the editor buffer only.
 - Fonts are the embedded Typst set, not your system fonts.
 - No PDF export.
 

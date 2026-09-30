@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ---
 
+## [0.7.0] - 2026-09-30
+
+### Added
+- Open Folder workspace (`File > Open Folder…`) with an interactive file-tree sidebar, remembered across sessions.
+- Typst preview resolves project files: relative `#import`/`#include` and assets (e.g. `#image`) resolve against the opened folder, with unsaved changes in other tabs included live.
+
 ## [0.6.0] - 2026-09-26
 
 ### Added
@@ -71,3 +77,4 @@ Initial release: cross-platform Notepad replacement with live Markdown preview (
 [0.4.0]: #040---2026-09-16
 [0.5.0]: #050---2026-09-19
 [0.6.0]: #060---2026-09-26
+[0.7.0]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.0

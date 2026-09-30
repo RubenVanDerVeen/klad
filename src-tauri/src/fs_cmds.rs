@@ -7,6 +7,14 @@ pub struct FileDoc {
     pub eol: String,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DirEntry {
+    pub name: String,
+    pub path: String,
+    pub is_dir: bool,
+}
+
 pub fn detect_eol(text: &str) -> &'static str {
     if text.contains("\r\n") {
         "CRLF"
@@ -114,6 +122,32 @@ pub fn get_startup_file() -> Option<String> {
     std::env::args()
         .nth(1)
         .filter(|p| std::path::Path::new(p).is_file())
+}
+
+// ponytail: no ignore-file/.gitignore support; dotfile skip only. Add ignore awareness if big build dirs annoy.
+#[tauri::command(async)]
+pub fn list_dir(path: String) -> Result<Vec<DirEntry>, String> {
+    let reader = std::fs::read_dir(&path).map_err(|e| e.to_string())?;
+    let mut out: Vec<DirEntry> = Vec::new();
+    for entry in reader {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if name.starts_with('.') {
+            continue;
+        }
+        let is_dir = entry.file_type().map_err(|e| e.to_string())?.is_dir();
+        out.push(DirEntry {
+            path: entry.path().to_string_lossy().into_owned(),
+            name,
+            is_dir,
+        });
+    }
+    out.sort_by(|a, b| match (a.is_dir, b.is_dir) {
+        (true, false) => std::cmp::Ordering::Less,
+        (false, true) => std::cmp::Ordering::Greater,
+        _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+    });
+    Ok(out)
 }
 
 #[cfg(test)]
@@ -278,5 +312,35 @@ mod tests {
         .unwrap();
         assert_eq!(std::fs::read(&p).unwrap(), b"&#28450;");
         std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn list_dir_sorts_dirs_first_and_skips_dotfiles() {
+        let root = tmp("ws_list_dir");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::create_dir_all(root.join("b_dir")).unwrap();
+        std::fs::create_dir_all(root.join("a_dir")).unwrap();
+        std::fs::write(root.join("B.txt"), "b").unwrap();
+        std::fs::write(root.join("a.txt"), "a").unwrap();
+        std::fs::write(root.join(".hidden"), "h").unwrap();
+
+        let entries = list_dir(root.to_string_lossy().into_owned()).unwrap();
+        let names: Vec<(bool, String)> =
+            entries.iter().map(|e| (e.is_dir, e.name.clone())).collect();
+        assert_eq!(
+            names,
+            vec![
+                (true, "a_dir".to_string()),
+                (true, "b_dir".to_string()),
+                (false, "a.txt".to_string()),
+                (false, "B.txt".to_string()),
+            ]
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn list_dir_missing_dir_is_error() {
+        assert!(list_dir("/definitely/not/hereklad".into()).is_err());
     }
 }

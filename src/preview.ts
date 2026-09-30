@@ -37,6 +37,33 @@ export function setPreviewBaseDir(path: string | null): void {
   previewBaseDir = path;
 }
 
+// --- typst project provider (workspace mode) -------------------------------
+
+export interface TypstProject {
+  path: string | null;
+  root: string | null;
+  overrides: Record<string, string>;
+}
+
+// ponytail: function-valued so every compile reads fresh tab state; mirrors
+// setPreviewBaseDir but the closure captures live views/active tab.
+let typstProjectProvider: (() => TypstProject | null) | null = null;
+
+export function setTypstProjectProvider(fn: (() => TypstProject | null) | null): void {
+  typstProjectProvider = fn;
+}
+
+export function typstCompileArgs(
+  text: string,
+  proj: TypstProject | null,
+): [string, string | null, string | null, Record<string, string>] {
+  return [text, proj?.path ?? null, proj?.root ?? null, proj?.overrides ?? {}];
+}
+
+// ponytail: tracks the root passed to the most recent compile so the error
+// banner can hide Source::detached's "/main.typ" file prefix in single-file mode.
+let lastCompileRoot: string | null = null;
+
 // --- visibility -----------------------------------------------------------
 
 let visible = false;
@@ -84,8 +111,12 @@ function errorBannerEl(): HTMLDivElement {
 }
 
 function showErrorBanner(e: TypstError): void {
+  // ponytail: Source::detached still interns FileId(Project, /main.typ), so
+  // err.file is non-null without a workspace — gate the file prefix on root.
+  const filePart = e.file != null && lastCompileRoot != null ? `${e.file}:` : "";
+  const linePart = e.line != null ? `line ${e.line}: ` : "";
   const el = errorBannerEl();
-  el.textContent = e.line != null ? `line ${e.line}: ${e.message}` : e.message;
+  el.textContent = `${filePart}${linePart}${e.message}`;
   el.hidden = false;
 }
 
@@ -106,7 +137,9 @@ function applyTypstResult(result: TypstResult): void {
 
 async function renderTypstNow(text: string): Promise<void> {
   const token = ++renderToken;
-  const result = await compileTypst(text);
+  const proj = typstProjectProvider?.() ?? null;
+  lastCompileRoot = proj?.root ?? null;
+  const result = await compileTypst(...typstCompileArgs(text, proj));
   if (!pickRender(token, renderToken)) return; // stale; a newer render is in flight
   applyTypstResult(result);
 }
