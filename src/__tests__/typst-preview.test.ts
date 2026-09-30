@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickRender } from "../preview";
+import { pickRender, typstCompileArgs } from "../preview";
 
 // previewKindForPath stays local here (it mirrors src/main.ts's isMarkdown/isTypst
 // derivation; main.ts doesn't export it). The contract under test is the
@@ -59,5 +59,17 @@ describe("previewKindForPath", () => {
 
   it("does not treat .csv-in-name as csv", () => {
     expect(previewKindForPath("backup.csv.bak")).toBe(null);
+  });
+});
+
+describe("typstCompileArgs", () => {
+  it("legacy args when no project", () => {
+    expect(typstCompileArgs("body", null)).toEqual(["body", null, null, {}]);
+  });
+  it("full args from provider snapshot", () => {
+    expect(typstCompileArgs("body", { path: "/r/m.typ", root: "/r", overrides: { "lib.typ": "x" } }))
+      .toEqual(["body", "/r/m.typ", "/r", { "lib.typ": "x" }]);
+    expect(typstCompileArgs("body", { path: null, root: null, overrides: {} }))
+      .toEqual(["body", null, null, {}]);
   });
 });
