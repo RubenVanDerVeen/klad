@@ -513,7 +513,7 @@ window.addEventListener("keydown", (e) => {
     void doNew();
   } else if (key === "o") {
     e.preventDefault();
-    void doOpen();
+    void (e.shiftKey ? openFolder() : doOpen());
   } else if (key === "s") {
     e.preventDefault();
     void (e.shiftKey ? doSaveAs() : doSave());
