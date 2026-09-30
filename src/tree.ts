@@ -60,6 +60,7 @@ function rowFor(entry: TreeEntry, depth: number): HTMLElement {
 async function toggleDir(row: HTMLElement, path: string, depth: number): Promise<void> {
   if (!hooks) return;
   let box = row.nextElementSibling as HTMLElement | null;
+  if (!box?.classList.contains("tree-children")) box = null;
   if (row.dataset.open === "true") {
     row.dataset.open = "false";
     row.textContent = `▸ ${row.dataset.name}`;
@@ -70,6 +71,7 @@ async function toggleDir(row: HTMLElement, path: string, depth: number): Promise
   row.textContent = `▾ ${row.dataset.name}`;
   if (!box) {
     box = document.createElement("div");
+    box.className = "tree-children";
     row.after(box);
   }
   box.replaceChildren(Object.assign(document.createElement("div"), { className: "tree-row tree-error", textContent: "…" }));
