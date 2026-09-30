@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach } from "vitest";
 import {
   collectOverrides, relPathUnder, parseWorkspace,
   saveWorkspace, clearWorkspace, loadWorkspace,

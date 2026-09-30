@@ -69,8 +69,8 @@ clean error in the preview banner.
 
 ### Limitations
 
-- No relative imports/includes of files next to the open document - the
-  preview compiles the editor buffer only.
+- Without an opened folder, no relative imports/includes of files next to
+  the open document - the preview compiles the editor buffer only.
 - Fonts are the embedded Typst set, not your system fonts.
 - No PDF export.
 

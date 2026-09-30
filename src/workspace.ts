@@ -19,15 +19,31 @@ export function parseWorkspace(raw: string | null): WorkspaceState | null {
 }
 
 export function loadWorkspace(): WorkspaceState | null {
-  return parseWorkspace(localStorage.getItem(KEY));
+  try {
+    return parseWorkspace(
+      typeof localStorage === "undefined" ? null : localStorage.getItem(KEY),
+    );
+  } catch {
+    return null;
+  }
 }
 
 export function saveWorkspace(root: string): void {
-  localStorage.setItem(KEY, JSON.stringify({ root }));
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(KEY, JSON.stringify({ root }));
+  } catch {
+    // best-effort: storage unavailable or full
+  }
 }
 
 export function clearWorkspace(): void {
-  localStorage.removeItem(KEY);
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.removeItem(KEY);
+  } catch {
+    // best-effort: storage unavailable
+  }
 }
 
 /** Forward-slash relpath of `path` under `root`; null when outside (or equal to root). */

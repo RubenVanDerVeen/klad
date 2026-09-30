@@ -325,10 +325,8 @@ mod tests {
         std::fs::write(root.join(".hidden"), "h").unwrap();
 
         let entries = list_dir(root.to_string_lossy().into_owned()).unwrap();
-        let names: Vec<(bool, String)> = entries
-            .iter()
-            .map(|e| (e.is_dir, e.name.clone()))
-            .collect();
+        let names: Vec<(bool, String)> =
+            entries.iter().map(|e| (e.is_dir, e.name.clone())).collect();
         assert_eq!(
             names,
             vec![
