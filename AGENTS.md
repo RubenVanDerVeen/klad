@@ -38,6 +38,7 @@ Klad is a cross-platform Notepad replacement for Windows and Linux with live Mar
 | Backend | `src-tauri/src/` | File I/O, encoding, EOL, Typst, Tauri commands |
 | Packaging | `src-tauri/` | Tauri configuration, ACL, bundle targets |
 | Tests | `src/__tests__/`, Rust inline tests | Frontend and backend verification |
+| Workspace | `src/workspace.ts`, `src/tree.ts` | Folder root state, sidebar file tree |
 
 ## On-demand Context
 | File | Purpose |

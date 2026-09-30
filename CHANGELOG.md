@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ---
 
+## [Unreleased]
+
+### Added
+- Open Folder workspace (`File > Open Folder…`) with an interactive file-tree sidebar, remembered across sessions.
+- Typst preview resolves project files: relative `#import`/`#include` and assets (e.g. `#image`) resolve against the opened folder, with unsaved changes in other tabs included live.
+
 ## [0.6.0] - 2026-09-26
 
 ### Added
