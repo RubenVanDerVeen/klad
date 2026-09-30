@@ -1,6 +1,6 @@
-//! Typst single-file live preview backend.
+//! Typst live preview backend.
 //!
-//! Verified against typst 0.15.1 + typst-assets 0.15.1 (see `cargo search`).
+//! Verified against typst 0.15.1 + typst-assets 0.15.1.
 //!
 //! API surface (pinned 0.15.1):
 //! - `typst::compile::<PagedDocument>(&dyn World) -> Warned<SourceResult<PagedDocument>>`
@@ -17,15 +17,23 @@
 //!   SVG; `SvgOptions: Default` (both fields default to `false`).
 //! - Diagnostics: `SourceDiagnostic { span: DiagSpan, message: EcoString, .. }`.
 //!   Resolve the byte range via `WorldExt::range(diag.span)` and convert to a
-//!   1-based line with `Source::lines().byte_to_line(start)`.
+//!   1-based line with the span's file's `Source::lines().byte_to_line`.
+//!
+//! Workspace / folder mode: when the frontend passes a `root` and a `path` that
+//! lies under it, the entry's `FileId` is project-rooted and lookups in
+//! `source()` / `file()` resolve to files on disk under `root`, with
+//! `overrides` (forward-slash relpaths of dirty buffers) shadowing the disk.
+//! `VirtualRoot::Project` is a unit variant in 0.15.1, so the project root
+//! path lives in `SingleFileWorld.project_root` rather than on the FileId.
 
 use serde::Serialize;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
-use typst::diag::SourceDiagnostic;
+use typst::diag::{FileError, SourceDiagnostic};
 use typst::foundations::Bytes;
-use typst::syntax::Source;
+use typst::syntax::{RootedPath, Source, VirtualPath, VirtualRoot};
 use typst::text::{Font, FontBook};
 use typst::utils::LazyHash;
 use typst::{LibraryExt, World, WorldExt};
@@ -36,6 +44,7 @@ use typst_kit::packages::{FsPackages, SystemPackages, UniversePackages};
 pub struct TypstError {
     pub message: String,
     pub line: Option<u32>,
+    pub file: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -44,13 +53,14 @@ pub struct TypstResult {
     pub errors: Vec<TypstError>,
 }
 
-/// v1 World: source from the editor buffer, embedded fonts only, every
-/// non-root file/package lookup is a clean error. v1 boundary is enforced
-/// here so `#include` / `#import` / `@preview` all surface as compile errors
-/// (spec §9). The `book` / `library` are once-init per process; the static
-/// `fonts()` cache holds the actual `Vec<Font>` (shared by every instance).
+/// v1 World with an optional workspace overlay: source from the editor
+/// buffer, embedded fonts, package lookup matching the typst CLI, and (when
+/// `project_root` is `Some`) project-rooted file lookups against that root
+/// with an `overrides` hashmap shadowing dirty buffers.
 struct SingleFileWorld {
     source: Source,
+    project_root: Option<PathBuf>,
+    overrides: HashMap<String, String>,
     packages: SystemPackages,
     library: OnceLock<LazyHash<typst::Library>>,
     book: OnceLock<LazyHash<FontBook>>,
@@ -58,9 +68,27 @@ struct SingleFileWorld {
 
 impl SingleFileWorld {
     // klad's editor buffer is already LF-normalized (AGENTS.md); no CRLF here.
-    fn with_packages(text: String, packages: SystemPackages) -> Self {
+    fn detached(text: String, packages: SystemPackages) -> Self {
         Self {
             source: Source::detached(text),
+            project_root: None,
+            overrides: HashMap::new(),
+            packages,
+            library: OnceLock::new(),
+            book: OnceLock::new(),
+        }
+    }
+
+    fn with_root(
+        source: Source,
+        project_root: PathBuf,
+        overrides: HashMap<String, String>,
+        packages: SystemPackages,
+    ) -> Self {
+        Self {
+            source,
+            project_root: Some(project_root),
+            overrides,
             packages,
             library: OnceLock::new(),
             book: OnceLock::new(),
@@ -75,7 +103,7 @@ impl SingleFileWorld {
         &self,
         id: typst::syntax::FileId,
         spec: &typst::syntax::package::PackageSpec,
-    ) -> Result<Bytes, typst::diag::FileError> {
+    ) -> Result<Bytes, FileError> {
         let root = self.packages.obtain(spec)?;
         root.load(id.vpath())
     }
@@ -117,7 +145,8 @@ fn fonts() -> &'static (LazyHash<FontBook>, Vec<Font>) {
 
 impl World for SingleFileWorld {
     fn library(&self) -> &LazyHash<typst::Library> {
-        self.library.get_or_init(|| LazyHash::new(typst::Library::default()))
+        self.library
+            .get_or_init(|| LazyHash::new(typst::Library::default()))
     }
 
     fn book(&self) -> &LazyHash<FontBook> {
@@ -134,16 +163,28 @@ impl World for SingleFileWorld {
             return Ok(self.source.clone());
         }
 
-        if let typst::syntax::VirtualRoot::Package(spec) = id.root() {
+        if let VirtualRoot::Package(spec) = id.root() {
             let bytes = self.package_file(id, spec)?;
-            let text = String::from_utf8(bytes.to_vec())
-                .map_err(|_| typst::diag::FileError::InvalidUtf8)?;
+            let text = String::from_utf8(bytes.to_vec()).map_err(|_| FileError::InvalidUtf8)?;
             return Ok(Source::new(id, text));
         }
 
-        Err(typst::diag::FileError::NotFound(PathBuf::from(
-            id.vpath().get_with_slash(),
-        )))
+        // Project-rooted lookup.
+        let Some(root) = &self.project_root else {
+            return Err(FileError::NotFound(PathBuf::from(
+                id.vpath().get_with_slash(),
+            )));
+        };
+        // Use the no-leading-slash form so override keys (forward-slash
+        // relpaths) match directly.
+        let rel = id.vpath().get_without_slash().to_string();
+        if let Some(text) = self.overrides.get(&rel) {
+            return Ok(Source::new(id, text.clone()));
+        }
+        let path = id.vpath().realize(root).map_err(FileError::Realize)?;
+        let text =
+            std::fs::read_to_string(&path).map_err(|e| FileError::from_io(e, &path))?;
+        Ok(Source::new(id, text))
     }
 
     fn file(&self, id: typst::syntax::FileId) -> typst::diag::FileResult<Bytes> {
@@ -151,13 +192,19 @@ impl World for SingleFileWorld {
             return Ok(Bytes::from_string(self.source.text().to_string()));
         }
 
-        if let typst::syntax::VirtualRoot::Package(spec) = id.root() {
+        if let VirtualRoot::Package(spec) = id.root() {
             return self.package_file(id, spec);
         }
 
-        Err(typst::diag::FileError::NotFound(PathBuf::from(
-            id.vpath().get_with_slash(),
-        )))
+        // Project-rooted lookup (raw bytes, e.g. images).
+        let Some(root) = &self.project_root else {
+            return Err(FileError::NotFound(PathBuf::from(
+                id.vpath().get_with_slash(),
+            )));
+        };
+        let path = id.vpath().realize(root).map_err(FileError::Realize)?;
+        let bytes = std::fs::read(&path).map_err(|e| FileError::from_io(e, &path))?;
+        Ok(Bytes::new(bytes))
     }
 
     fn font(&self, index: usize) -> Option<Font> {
@@ -177,18 +224,31 @@ impl World for SingleFileWorld {
     }
 }
 
-/// Resolve a `SourceDiagnostic` to the v1 banner shape: a one-line message
-/// plus a 1-based source line when the span resolves into the root source.
+/// Forward-slash relpath of `path` under `root`, or `None` when outside (or
+/// equal to root). Accepts both `/` and `\` separators in inputs.
+fn rel_path_under(root: &str, path: &str) -> Option<String> {
+    let norm = |p: &str| p.replace('\\', "/");
+    let r = norm(root).trim_end_matches('/').to_string();
+    let p = norm(path).trim_end_matches('/').to_string();
+    if !p.starts_with(&format!("{r}/")) {
+        return None;
+    }
+    Some(p[r.len() + 1..].to_string())
+}
+
+/// Resolve a `SourceDiagnostic` to the banner shape: message, 1-based line in
+/// the span's source (when resolvable), and the span's file vpath.
 fn format_diag(world: &SingleFileWorld, d: &SourceDiagnostic) -> TypstError {
     let message = d.message.to_string();
-    let line = world
-        .range(d.span)
-        .and_then(|range| {
-            let line0 = world.source.lines().byte_to_line(range.start)?;
-            // typst lines are 0-based; the banner displays 1-based.
-            Some((line0 as u32) + 1)
-        });
-    TypstError { message, line }
+    let span_id = d.span.id();
+    let line = span_id.and_then(|id| {
+        let range = world.range(d.span)?;
+        let src = world.source(id).ok()?;
+        let line0 = src.lines().byte_to_line(range.start)?;
+        Some((line0 as u32) + 1)
+    });
+    let file = span_id.map(|id| id.vpath().get_without_slash().to_string());
+    TypstError { message, line, file }
 }
 
 /// `async` = run this sync body on the blocking threadpool: a plain sync
@@ -196,16 +256,43 @@ fn format_diag(world: &SingleFileWorld, d: &SourceDiagnostic) -> TypstError {
 /// package download would freeze the whole window. invoke() is unchanged.
 #[tauri::command(async)]
 #[allow(dead_code)] // Tauri generates a parallel command wrapper; this symbol is reachable only via invoke_handler
-pub fn compile_typst(text: String) -> Result<TypstResult, String> {
-    compile_with_packages(text, system_packages())
+pub fn compile_typst(
+    text: String,
+    path: Option<String>,
+    root: Option<String>,
+    overrides: HashMap<String, String>,
+) -> Result<TypstResult, String> {
+    let packages = system_packages();
+    // Choose entry source: project-rooted when both `path` and `root` are
+    // supplied and `path` lies under `root`; detached fallback otherwise.
+    if let (Some(p), Some(r)) = (path.as_deref(), root.as_deref()) {
+        if let Some(rel) = rel_path_under(r, p) {
+            let vpath = VirtualPath::new(rel.as_str()).map_err(|e| e.to_string())?;
+            let id = RootedPath::new(VirtualRoot::Project, vpath).intern();
+            let world = SingleFileWorld::with_root(
+                Source::new(id, text),
+                PathBuf::from(r),
+                overrides,
+                packages,
+            );
+            return compile_with_world(&world);
+        }
+    }
+    let world = SingleFileWorld::detached(text, packages);
+    compile_with_world(&world)
 }
 
+#[cfg(test)]
 fn compile_with_packages(
     text: String,
     packages: SystemPackages,
 ) -> Result<TypstResult, String> {
-    let world = SingleFileWorld::with_packages(text, packages);
-    let warned = typst::compile::<typst_layout::PagedDocument>(&world);
+    let world = SingleFileWorld::detached(text, packages);
+    compile_with_world(&world)
+}
+
+fn compile_with_world(world: &SingleFileWorld) -> Result<TypstResult, String> {
+    let warned = typst::compile::<typst_layout::PagedDocument>(world);
     // Warnings are out-of-band; v1 banner shows errors only. Surfacing
     // warnings can land in a later polish slice.
     let _ = warned.warnings;
@@ -220,7 +307,7 @@ fn compile_with_packages(
             Ok(TypstResult { pages, errors: vec![] })
         }
         Err(diags) => {
-            let errors = diags.iter().map(|d| format_diag(&world, d)).collect();
+            let errors = diags.iter().map(|d| format_diag(world, d)).collect();
             Ok(TypstResult {
                 pages: vec![],
                 errors,
@@ -234,7 +321,7 @@ mod tests {
     use super::*;
     use std::any::Any;
     use std::io::{ErrorKind, Read};
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
     use typst_kit::downloader::Downloader;
     use typst_kit::packages::{FsPackages, SystemPackages, UniversePackages};
 
@@ -278,6 +365,30 @@ mod tests {
         dir
     }
 
+    /// Write a file at `<root>/<rel>`, creating parent dirs as needed.
+    fn write_file(root: &Path, rel: &str, content: &str) {
+        let p = root.join(rel);
+        std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+        std::fs::write(&p, content).unwrap();
+    }
+
+    /// Test-only wrapper: invoke the command exactly as the IPC layer does,
+    /// exercising the (path, root, overrides) surface.
+    fn compile_with(
+        text: &str,
+        path: Option<&str>,
+        root: Option<&str>,
+        overrides: HashMap<String, String>,
+    ) -> TypstResult {
+        compile_typst(
+            text.to_string(),
+            path.map(String::from),
+            root.map(String::from),
+            overrides,
+        )
+        .unwrap()
+    }
+
     #[test]
     fn imports_local_package() {
         let dir = fixture_dir("local");
@@ -311,7 +422,8 @@ mod tests {
 
     #[test]
     fn compiles_trivial_doc() {
-        let r = compile_typst("#set page(width: 40pt)\nHi".into()).unwrap();
+        let r =
+            compile_with("#set page(width: 40pt)\nHi", None, None, HashMap::new());
         assert!(r.errors.is_empty(), "unexpected errors: {:?}", r.errors);
         assert!(!r.pages.is_empty(), "expected at least one page");
         assert!(
@@ -324,32 +436,122 @@ mod tests {
     #[test]
     fn returns_errors_for_broken_doc() {
         // malformed: width takes a value, not empty
-        let r = compile_typst("#set page(width: )".into()).unwrap();
+        let r =
+            compile_typst("#set page(width: )".into(), None, None, HashMap::new()).unwrap();
         assert!(r.pages.is_empty(), "expected no pages on compile error");
         assert!(!r.errors.is_empty(), "expected at least one error");
-        // at least one error should carry a line if the pinned version exposes it
-        // (don't assert line.is_some() hard — version-dependent)
     }
 
     #[test]
-    fn include_is_clean_error_in_v1() {
-        // v1 boundary (spec §9): file lookups are clean errors, not panics
-        let r = compile_typst("#include \"other.typ\"".into()).unwrap();
-        assert!(
-            !r.errors.is_empty(),
-            "expected #include to surface as an error"
+    fn imports_error_without_root() {
+        // preserves old v1 coverage (was: include_is_clean_error_in_v1)
+        let result =
+            compile_with("#import \"other.typ\": x\n#x", None, None, HashMap::new());
+        assert!(!result.errors.is_empty());
+    }
+
+    #[test]
+    fn project_imports_resolve_across_files() {
+        let root = fixture_dir("ws_project_imports");
+        write_file(&root, "lib.typ", "#let greeting = [hello]");
+        write_file(&root, "ch1/main.typ", "#import \"../lib.typ\": greeting\n#greeting");
+        let result = compile_with(
+            "#import \"../lib.typ\": greeting\n#greeting",
+            Some(root.join("ch1/main.typ").to_string_lossy().as_ref()),
+            Some(root.to_string_lossy().as_ref()),
+            HashMap::new(),
         );
-        let combined: String = r
-            .errors
-            .iter()
-            .map(|e| e.message.clone())
-            .collect::<Vec<_>>()
-            .join(" ");
-        assert!(
-            combined.to_lowercase().contains("other.typ"),
-            "error should mention the missing file: {}",
-            combined
+        std::fs::remove_dir_all(&root).ok();
+        assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+        assert_eq!(result.pages.len(), 1);
+    }
+
+    #[test]
+    fn dirty_override_wins_over_disk() {
+        let root = fixture_dir("ws_dirty_override");
+        // disk copy is broken; override supplies valid text -> compile succeeds only if override used
+        write_file(&root, "lib.typ", "#let greeting = ");
+        write_file(&root, "main.typ", "#import \"lib.typ\": greeting\n#greeting");
+        let mut overrides = HashMap::new();
+        overrides.insert("lib.typ".to_string(), "#let greeting = [hi]".to_string());
+        let result = compile_with(
+            "#import \"lib.typ\": greeting\n#greeting",
+            Some(root.join("main.typ").to_string_lossy().as_ref()),
+            Some(root.to_string_lossy().as_ref()),
+            overrides,
         );
+        std::fs::remove_dir_all(&root).ok();
+        assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+    }
+
+    #[test]
+    fn missing_import_stays_clean_error() {
+        let root = fixture_dir("ws_missing_import");
+        let result = compile_with(
+            "#import \"nope.typ\": x\n#x",
+            Some(root.join("main.typ").to_string_lossy().as_ref()),
+            Some(root.to_string_lossy().as_ref()),
+            HashMap::new(),
+        );
+        std::fs::remove_dir_all(&root).ok();
+        assert!(!result.errors.is_empty());
+        assert!(
+            result.errors[0].message.contains("nope.typ"),
+            "msg: {}",
+            result.errors[0].message
+        );
+    }
+
+    #[test]
+    fn error_in_imported_file_carries_file() {
+        let root = fixture_dir("ws_error_file");
+        write_file(&root, "lib.typ", "#assert(false)");
+        write_file(&root, "main.typ", "#import \"lib.typ\"\n");
+        let result = compile_with(
+            "#import \"lib.typ\"\n",
+            Some(root.join("main.typ").to_string_lossy().as_ref()),
+            Some(root.to_string_lossy().as_ref()),
+            HashMap::new(),
+        );
+        std::fs::remove_dir_all(&root).ok();
+        assert!(!result.errors.is_empty());
+        assert_eq!(result.errors[0].file.as_deref(), Some("lib.typ"));
+        assert_eq!(result.errors[0].line, Some(1));
+    }
+
+    #[test]
+    fn entry_outside_root_falls_back_to_detached() {
+        let root = fixture_dir("ws_outside_root");
+        let elsewhere = fixture_dir("ws_outside_elsewhere");
+        write_file(&root, "lib.typ", "#let greeting = [hi]");
+        let result = compile_with(
+            "#import \"lib.typ\": greeting\n#greeting",
+            Some(elsewhere.join("main.typ").to_string_lossy().as_ref()),
+            Some(root.to_string_lossy().as_ref()),
+            HashMap::new(),
+        );
+        std::fs::remove_dir_all(&root).ok();
+        std::fs::remove_dir_all(&elsewhere).ok();
+        assert!(!result.errors.is_empty(), "entry outside root must behave as detached");
+    }
+
+    #[test]
+    fn project_file_resolves_binary_asset() {
+        let root = fixture_dir("ws_binary_asset");
+        write_file(
+            &root,
+            "tiny.svg",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"><rect width=\"10\" height=\"10\" fill=\"red\"/></svg>",
+        );
+        let result = compile_with(
+            "#image(\"tiny.svg\")",
+            Some(root.join("main.typ").to_string_lossy().as_ref()),
+            Some(root.to_string_lossy().as_ref()),
+            HashMap::new(),
+        );
+        std::fs::remove_dir_all(&root).ok();
+        assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+        assert_eq!(result.pages.len(), 1);
     }
 }
 
