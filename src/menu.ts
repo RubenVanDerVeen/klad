@@ -26,6 +26,8 @@ export interface MenuActions {
   closeTab(): void;
   nextTab(): void;
   prevTab(): void;
+  onOpenFolder(): void;
+  onCloseFolder(): void;
 }
 
 export interface MenuHandles {
@@ -43,6 +45,8 @@ export async function setupMenu(
     items: [
       await MenuItem.new({ id: "new", text: "New", accelerator: "CmdOrCtrl+N", action: actions.newFile }),
       await MenuItem.new({ id: "open", text: "Open…", accelerator: "CmdOrCtrl+O", action: actions.openFile }),
+      await MenuItem.new({ id: "openFolder", text: "Open Folder…", accelerator: "CmdOrCtrl+Shift+O", action: actions.onOpenFolder }),
+      await MenuItem.new({ id: "closeFolder", text: "Close Folder", action: actions.onCloseFolder }),
       await MenuItem.new({ id: "save", text: "Save", accelerator: "CmdOrCtrl+S", action: actions.saveFile }),
       await MenuItem.new({ id: "saveAs", text: "Save As…", accelerator: "CmdOrCtrl+Shift+S", action: actions.saveFileAs }),
       await PredefinedMenuItem.new({ item: "Separator" }),

@@ -6,7 +6,7 @@ import { EditorView } from "@codemirror/view";
 import { askSave, showError } from "./dialogs";
 import { DocMeta, fileName, newDoc, windowTitle } from "./document";
 import { createEditor, getText, setText, setWrap } from "./editor";
-import { getStartupFile, listenOpenFile, readFile, saveFile } from "./fileio";
+import { getStartupFile, listDir, listenOpenFile, readFile, saveFile } from "./fileio";
 import { MenuHandles, setupMenu } from "./menu";
 import { loadSession, saveSession, Session, toSession } from "./session";
 import { clampFontSize, clampZoom, loadSettings, saveSettings, Settings } from "./settings";
@@ -17,9 +17,13 @@ import {
   setPreviewBaseDir,
   setPreviewKind,
   setPreviewVisible,
+  setTypstProjectProvider,
   syncPreviewScroll,
+  TypstProject,
   updatePreview,
 } from "./preview";
+import { initTree, renderTreeRoot, clearTree } from "./tree";
+import { collectOverrides, clearWorkspace, loadWorkspace, OverrideEntry, saveWorkspace } from "./workspace";
 import {
   closeTab,
   findTabByPath,
@@ -50,6 +54,46 @@ interface RuntimeTab extends TabState {
 let coll: TabCollection = newCollection();
 let runtime: RuntimeTab[] = [];
 let meta: DocMeta = newDoc(); // alias of activeTab().meta; rebound on switch
+let workspaceRoot: string | null = null;
+
+function currentTypstProject(): TypstProject {
+  const active = runtime.find((t) => t.id === coll.activeId);
+  const path = active?.meta.path ?? null;
+  // ponytail: gate root on active path — preview.ts gates its error banner's
+  // file prefix on lastCompileRoot, so workspace + untitled active must look
+  // detached (Rust falls back anyway, but a non-null root would leak a
+  // misleading `main.typ:` prefix on the banner).
+  const root = path && workspaceRoot ? workspaceRoot : null;
+  const entries: OverrideEntry[] = runtime.map((t) => ({
+    path: t.meta.path,
+    dirty: t.meta.dirty,
+    text: getText(t.view),
+  }));
+  const overrides = root ? collectOverrides(entries, root, path ?? undefined) : {};
+  return { path, root, overrides };
+}
+
+function refreshTypstProvider(): void {
+  setTypstProjectProvider(workspaceRoot ? currentTypstProject : null);
+}
+
+async function openFolder(): Promise<void> {
+  const dir = await openDialog({ directory: true, multiple: false });
+  if (typeof dir !== "string") return;
+  workspaceRoot = dir;
+  saveWorkspace(dir);
+  document.getElementById("sidebar")?.removeAttribute("hidden");
+  await renderTreeRoot(dir);
+  refreshTypstProvider();
+}
+
+function closeFolder(): void {
+  workspaceRoot = null;
+  clearWorkspace();
+  clearTree();
+  document.getElementById("sidebar")?.setAttribute("hidden", "");
+  refreshTypstProvider();
+}
 
 function activeTab(): RuntimeTab {
   const t = runtime.find((t) => t.id === coll.activeId);
@@ -197,6 +241,7 @@ function applyPreviewMode(): void {
   // dispatches correctly. For 'typ' the kind is read inside the async branch.
   setPreviewKind(kind ?? "md");
   setPreviewBaseDir(meta.path ? dirName(meta.path) : null);
+  refreshTypstProvider();
   if (kind) renderPreviewNow(getText(activeTab().view));
   void menuHandles?.previewItem.setChecked(kind !== null);
 }
@@ -402,6 +447,8 @@ try {
         const id = coll.activeId;
         if (id) void closeTabById(id);
       },
+      onOpenFolder: () => void openFolder(),
+      onCloseFolder: () => closeFolder(),
       nextTab: () => {
         const next = nextTab(coll);
         if (next.activeId && next.activeId !== coll.activeId) switchToTab(next.activeId);
@@ -441,6 +488,8 @@ initTabBar({
   onClose: (id) => void closeTabById(id),
   onNew: () => void doNew(),
 });
+
+initTree({ onOpen: openPath, listDir });
 
 // WebView2 (Windows) swallows a fixed set of "browser shortcuts" — Ctrl+N/O/S/Shift+S
 // and Ctrl+W — before the Tauri menu accelerator can see them. The accelerator is
@@ -485,6 +534,18 @@ void (async () => {
   // See docs/artifacts/features/restore-on-launch/2026-08-02-restore-on-launch-design.md
   // (supersedes the old tabs-§8 "skip restore on file arg" rule).
   await restoreSessionOrNew();
+  const stored = loadWorkspace();
+  if (stored) {
+    try {
+      await listDir(stored.root); // dir still exists?
+      workspaceRoot = stored.root;
+      document.getElementById("sidebar")?.removeAttribute("hidden");
+      await renderTreeRoot(stored.root);
+      refreshTypstProvider();
+    } catch {
+      clearWorkspace(); // moved/deleted: forget it silently
+    }
+  }
   if (startupFile) {
     await openPath(startupFile);
   }

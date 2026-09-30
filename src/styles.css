@@ -281,3 +281,35 @@ dialog {
   color: var(--fg-muted);
 }
 
+/* Workspace sidebar + file tree */
+#sidebar {
+  flex: none;
+  width: 220px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+  padding: 4px 0;
+}
+#sidebar[hidden] { display: none; }
+#sidebar-title {
+  font-weight: 600;
+  padding: 4px 8px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tree-row {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-right: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+.tree-row:hover { background: var(--hover-bg); }
+.tree-dir { font-weight: 500; }
+.tree-root { font-weight: 600; }
+.tree-error { opacity: 0.6; font-style: italic; cursor: default; }
+.tree-error:hover { background: none; }
+
