@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ---
 
+## [0.7.1]
+
+### Fixed
+
+- Workspace file tree: expanding a subdirectory no longer corrupts the rows
+  after it (hover selecting all children, clicks opening the wrong file, and
+  rows disappearing on collapse).
+
 ## [0.7.0] - 2026-09-30
 
 ### Added
