@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ---
 
+## [0.7.1] - 2026-09-30
+
+### Fixed
+
+- Workspace file tree: expanding a subdirectory no longer corrupts the rows
+  after it (hover selecting all children, clicks opening the wrong file, and
+  rows disappearing on collapse).
+
 ## [0.7.0] - 2026-09-30
 
 ### Added
@@ -78,3 +86,4 @@ Initial release: cross-platform Notepad replacement with live Markdown preview (
 [0.5.0]: #050---2026-09-19
 [0.6.0]: #060---2026-09-26
 [0.7.0]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.0
+[0.7.1]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.1
