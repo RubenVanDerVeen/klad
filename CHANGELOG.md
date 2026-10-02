@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ---
 
+## [0.7.2] - 2026-10-02
+
+### Fixed
+
+- Dark theme: the editor caret is now white in both the CodeMirror-drawn caret
+  and the native caret path, fixing the near-invisible caret against the dark
+  background.
+
 ## [0.7.1] - 2026-09-30
 
 ### Fixed
@@ -87,3 +95,4 @@ Initial release: cross-platform Notepad replacement with live Markdown preview (
 [0.6.0]: #060---2026-09-26
 [0.7.0]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.0
 [0.7.1]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.1
+[0.7.2]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.2
