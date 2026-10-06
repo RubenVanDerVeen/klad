@@ -60,12 +60,14 @@ body {
   font-size: var(--editor-font-size, 14px);
 }
 #preview {
-  flex: 1;
-  min-width: 0;
+  flex: none;
+  width: var(--preview-w, 380px);
+  min-width: 200px;
   overflow: auto;
   border-left: 1px solid var(--border);
   padding: 0 16px;
 }
+#preview[hidden] { display: none; }
 #statusbar {
   display: flex;
   gap: 16px;
@@ -285,12 +287,24 @@ dialog {
 /* Workspace sidebar + file tree */
 #sidebar {
   flex: none;
-  width: 220px;
+  width: var(--sidebar-w, 220px);
+  min-width: 140px;
+  max-width: 480px;
   overflow-y: auto;
   border-right: 1px solid var(--border);
   padding: 4px 0;
 }
 #sidebar[hidden] { display: none; }
+.pane-handle {
+  flex: none;
+  width: 5px;
+  cursor: col-resize;
+  background: transparent;
+}
+.pane-handle:hover, .pane-handle:active { background: var(--border); }
+body.pane-resizing { cursor: col-resize; user-select: none; }
+#sidebar[hidden] + #sidebar-handle { display: none; }
+#preview-handle:has(+ #preview[hidden]) { display: none; }
 #sidebar-title {
   font-weight: 600;
   padding: 4px 8px 8px;
