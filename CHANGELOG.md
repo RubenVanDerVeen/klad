@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ---
 
-## [Unreleased]
+## [0.8.0] - 2026-10-06
 
 ### Added
 
@@ -107,3 +107,4 @@ Initial release: cross-platform Notepad replacement with live Markdown preview (
 [0.7.0]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.0
 [0.7.1]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.1
 [0.7.2]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.2
+[0.8.0]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.8.0
