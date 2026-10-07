@@ -22,6 +22,7 @@ export interface MenuActions {
   zoomReset(): void;
   chooseFont(): void;
   togglePreview(on: boolean): void;
+  toggleSidebar(on: boolean): void;
   toggleTheme(on: boolean): void;
   closeTab(): void;
   nextTab(): void;
@@ -33,6 +34,7 @@ export interface MenuActions {
 export interface MenuHandles {
   wrapItem: CheckMenuItem;
   previewItem: CheckMenuItem;
+  sidebarItem: CheckMenuItem;
 }
 
 export async function setupMenu(
@@ -91,6 +93,14 @@ export async function setupMenu(
     action: async () => actions.togglePreview(await previewItem.isChecked()),
   });
 
+  const sidebarItem = await CheckMenuItem.new({
+    id: "toggleSidebar",
+    text: "Toggle Sidebar",
+    checked: true,
+    // ponytail: relies on Tauri flipping CheckMenuItem state before invoking the action
+    action: async () => actions.toggleSidebar(await sidebarItem.isChecked()),
+  });
+
   let themeItem: CheckMenuItem | undefined;
   themeItem = await CheckMenuItem.new({
     id: "themeDark",
@@ -111,6 +121,7 @@ export async function setupMenu(
       await MenuItem.new({ id: "zoomReset", text: "Restore Default Zoom", accelerator: "CmdOrCtrl+0", action: actions.zoomReset }),
       await PredefinedMenuItem.new({ item: "Separator" }),
       themeItem,
+      sidebarItem,
       previewItem,
     ],
   });
@@ -132,5 +143,5 @@ export async function setupMenu(
 
   const menu = await Menu.new({ items: [fileMenu, editMenu, viewMenu, tabsMenu, formatMenu] });
   await menu.setAsAppMenu();
-  return { wrapItem, previewItem };
+  return { wrapItem, previewItem, sidebarItem };
 }

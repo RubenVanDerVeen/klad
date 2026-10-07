@@ -23,6 +23,7 @@ import {
   updatePreview,
 } from "./preview";
 import { initTree, renderTreeRoot, clearTree } from "./tree";
+import { applyUiLayout, getUiLayout, initPanelSplitters, loadUiLayout, saveUiLayout } from "./uilayout";
 import { collectOverrides, clearWorkspace, loadWorkspace, OverrideEntry, saveWorkspace } from "./workspace";
 import {
   closeTab,
@@ -83,6 +84,10 @@ async function openFolder(): Promise<void> {
   workspaceRoot = dir;
   saveWorkspace(dir);
   document.getElementById("sidebar")?.removeAttribute("hidden");
+  menuHandles?.sidebarItem.setChecked(true);
+  const s = getUiLayout();
+  s.sidebarHidden = false;
+  applyUiLayout(s);
   await renderTreeRoot(dir);
   refreshTypstProvider();
 }
@@ -92,6 +97,10 @@ function closeFolder(): void {
   clearWorkspace();
   clearTree();
   document.getElementById("sidebar")?.setAttribute("hidden", "");
+  const s = getUiLayout();
+  s.sidebarHidden = true;
+  applyUiLayout(s);
+  menuHandles?.sidebarItem.setChecked(false);
   refreshTypstProvider();
 }
 
@@ -438,6 +447,12 @@ try {
         setPreviewVisible(on);
         if (on) renderPreviewNow(getText(activeTab().view));
       },
+      toggleSidebar: (on) => {
+        const s = getUiLayout();
+        s.sidebarHidden = !on;
+        saveUiLayout(s);
+        applyUiLayout(s);
+      },
       toggleTheme: (on) => {
         settings.theme = on ? "dark" : "light";
         saveSettings(settings);
@@ -539,13 +554,16 @@ void (async () => {
     try {
       await listDir(stored.root); // dir still exists?
       workspaceRoot = stored.root;
-      document.getElementById("sidebar")?.removeAttribute("hidden");
       await renderTreeRoot(stored.root);
       refreshTypstProvider();
     } catch {
       clearWorkspace(); // moved/deleted: forget it silently
     }
   }
+  const ui = loadUiLayout();
+  applyUiLayout({ ...ui, sidebarHidden: !workspaceRoot ? true : ui.sidebarHidden });
+  initPanelSplitters();
+  menuHandles?.sidebarItem.setChecked(!getUiLayout().sidebarHidden);
   if (startupFile) {
     await openPath(startupFile);
   }

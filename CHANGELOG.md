@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ---
 
+## [0.8.0] - 2026-10-06
+
+### Added
+
+- Resizable sidebar and preview columns: drag the handles between panes to resize (double-click a handle resets to default width).
+- Collapsible sidebar via `View > Toggle Sidebar`; the tree keeps its expansion state while hidden.
+
+### Changed
+
+- Panel layout (column widths and sidebar visibility) is persisted across restarts, stored under the `klad-ui` localStorage key.
+
 ## [0.7.2] - 2026-10-02
 
 ### Fixed
@@ -96,3 +107,4 @@ Initial release: cross-platform Notepad replacement with live Markdown preview (
 [0.7.0]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.0
 [0.7.1]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.1
 [0.7.2]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.7.2
+[0.8.0]: https://github.com/RubenVanDerVeen/klad/releases/tag/v0.8.0
