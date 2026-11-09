@@ -211,6 +211,55 @@ dialog {
   color: #f87171;
 }
 
+/* Typst error bar: slim sticky strip atop the preview pane */
+#preview-error {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 -16px; /* full-bleed across #preview's 0 16px padding */
+  padding: 4px 8px;
+  background: #fde8e8;
+  border-bottom: 1px solid #f0c0c0;
+  color: #b00;
+  font-family: var(--editor-font-family, monospace);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+#preview-error .preview-error-msg {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#preview-error .preview-error-count {
+  flex: none;
+  font-weight: 600;
+}
+#preview-error .preview-error-close {
+  flex: none;
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 3px;
+}
+#preview-error .preview-error-close:hover { background: rgba(0, 0, 0, 0.08); }
+[data-theme="dark"] #preview-error {
+  background: #2e1a1a;
+  border-bottom-color: #5a2a2a;
+  color: #f87171;
+}
+[data-theme="dark"] #preview-error .preview-error-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* Tab bar */
 #tabbar {
   display: flex;

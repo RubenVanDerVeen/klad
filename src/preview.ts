@@ -87,36 +87,54 @@ export function pickRender(currentToken: number, latestToken: number): boolean {
 
 let renderToken = 0;
 
-// --- error banner (built from TS; no index.html change) ------------------
+// --- error bar (built from TS; no index.html change) ----------------------
 
-let errorBanner: HTMLDivElement | null = null;
+let errorBanner: HTMLElement | null = null;
 
-function errorBannerEl(): HTMLDivElement {
-  if (errorBanner) return errorBanner;
+function errorBannerEl(): HTMLElement {
+  // isConnected check: pane().innerHTML wipes the bar on a successful render;
+  // recreate it lazily instead of returning an orphaned node.
+  if (errorBanner?.isConnected) return errorBanner;
   const el = document.createElement("div");
   el.id = "preview-error";
-  // ponytail: inline styles — klad has no CSS file for plugin chrome; matches
-  // the dialog style precedent. Upgrade to a class if a stylesheet lands.
-  el.style.color = "#b00";
-  el.style.background = "#fde8e8";
-  el.style.borderBottom = "1px solid #f0c0c0";
-  el.style.padding = "4px 8px";
-  el.style.fontFamily = "var(--editor-font-family, monospace)";
-  el.style.fontSize = "12px";
-  el.style.whiteSpace = "pre-wrap";
   el.hidden = true;
-  pane().parentElement?.prepend(el);
+
+  const msg = document.createElement("span");
+  msg.className = "preview-error-msg";
+  el.appendChild(msg);
+
+  const count = document.createElement("span");
+  count.className = "preview-error-count";
+  el.appendChild(count);
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "preview-error-close";
+  close.setAttribute("aria-label", "Dismiss error");
+  close.textContent = "✕";
+  close.addEventListener("click", () => {
+    el.hidden = true;
+  });
+  el.appendChild(close);
+
+  pane().prepend(el);
   errorBanner = el;
   return el;
 }
 
-function showErrorBanner(e: TypstError): void {
+function showErrorBanner(errors: TypstError[]): void {
   // ponytail: Source::detached still interns FileId(Project, /main.typ), so
   // err.file is non-null without a workspace — gate the file prefix on root.
-  const filePart = e.file != null && lastCompileRoot != null ? `${e.file}:` : "";
-  const linePart = e.line != null ? `line ${e.line}: ` : "";
+  const first = errors[0]!;
+  const filePart = first.file != null && lastCompileRoot != null ? `${first.file}:` : "";
+  const linePart = first.line != null ? `line ${first.line}: ` : "";
   const el = errorBannerEl();
-  el.textContent = `${filePart}${linePart}${e.message}`;
+  const text = `${filePart}${linePart}${first.message}`;
+  const more = errors.length > 1 ? ` (+${errors.length - 1} more)` : "";
+  el.querySelector<HTMLElement>(".preview-error-msg")!.textContent = text;
+  el.title = `${text}${more}`;
+  el.querySelector<HTMLElement>(".preview-error-count")!.textContent =
+    errors.length > 1 ? `+${errors.length - 1}` : "";
   el.hidden = false;
 }
 
@@ -128,7 +146,7 @@ function hideErrorBanner(): void {
 
 function applyTypstResult(result: TypstResult): void {
   if (result.errors.length > 0) {
-    showErrorBanner(result.errors[0]!);
+    showErrorBanner(result.errors);
     return; // keep last-good pane contents
   }
   hideErrorBanner();
