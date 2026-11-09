@@ -61,7 +61,7 @@ export function typstCompileArgs(
 }
 
 // ponytail: tracks the root passed to the most recent compile so the error
-// banner can hide Source::detached's "/main.typ" file prefix in single-file mode.
+// bar can hide Source::detached's "/main.typ" file prefix in single-file mode.
 let lastCompileRoot: string | null = null;
 
 // --- visibility -----------------------------------------------------------
@@ -75,7 +75,7 @@ export function isPreviewVisible(): boolean {
 export function setPreviewVisible(on: boolean): void {
   visible = on;
   pane().hidden = !on;
-  if (!on) hideErrorBanner();
+  if (!on) hideErrorBar();
 }
 
 // --- race guard (spec §4.2) ----------------------------------------------
@@ -87,51 +87,70 @@ export function pickRender(currentToken: number, latestToken: number): boolean {
 
 let renderToken = 0;
 
-// --- error banner (built from TS; no index.html change) ------------------
+// --- error bar (built from TS; no index.html change) ----------------------
 
-let errorBanner: HTMLDivElement | null = null;
+let errorBar: HTMLElement | null = null;
 
-function errorBannerEl(): HTMLDivElement {
-  if (errorBanner) return errorBanner;
+function errorBarEl(): HTMLElement {
+  // isConnected check: pane().innerHTML wipes the bar on a successful render;
+  // recreate it lazily instead of returning an orphaned node.
+  if (errorBar?.isConnected) return errorBar;
   const el = document.createElement("div");
   el.id = "preview-error";
-  // ponytail: inline styles — klad has no CSS file for plugin chrome; matches
-  // the dialog style precedent. Upgrade to a class if a stylesheet lands.
-  el.style.color = "#b00";
-  el.style.background = "#fde8e8";
-  el.style.borderBottom = "1px solid #f0c0c0";
-  el.style.padding = "4px 8px";
-  el.style.fontFamily = "var(--editor-font-family, monospace)";
-  el.style.fontSize = "12px";
-  el.style.whiteSpace = "pre-wrap";
   el.hidden = true;
-  pane().parentElement?.prepend(el);
-  errorBanner = el;
+
+  const msg = document.createElement("span");
+  msg.className = "preview-error-msg";
+  el.appendChild(msg);
+
+  const count = document.createElement("span");
+  count.className = "preview-error-count";
+  el.appendChild(count);
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "preview-error-close";
+  close.setAttribute("aria-label", "Dismiss error");
+  close.textContent = "✕";
+  close.addEventListener("click", () => {
+    el.hidden = true;
+  });
+  el.appendChild(close);
+
+  pane().prepend(el);
+  errorBar = el;
   return el;
 }
 
-function showErrorBanner(e: TypstError): void {
+function showErrorBar(errors: TypstError[]): void {
   // ponytail: Source::detached still interns FileId(Project, /main.typ), so
   // err.file is non-null without a workspace — gate the file prefix on root.
-  const filePart = e.file != null && lastCompileRoot != null ? `${e.file}:` : "";
-  const linePart = e.line != null ? `line ${e.line}: ` : "";
-  const el = errorBannerEl();
-  el.textContent = `${filePart}${linePart}${e.message}`;
+  const first = errors[0]!;
+  const filePart = first.file != null && lastCompileRoot != null ? `${first.file}:` : "";
+  const linePart = first.line != null ? `line ${first.line}: ` : "";
+  const el = errorBarEl();
+  const text = `${filePart}${linePart}${first.message}`;
+  const extra = errors.length - 1;
+  const more = extra > 0 ? ` (+${extra} more)` : "";
+  el.querySelector<HTMLElement>(".preview-error-msg")!.textContent = text;
+  el.title = `${text}${more}`;
+  el.querySelector<HTMLElement>(".preview-error-count")!.textContent =
+    extra > 0 ? `+${extra}` : "";
   el.hidden = false;
 }
 
-function hideErrorBanner(): void {
-  if (errorBanner) errorBanner.hidden = true;
+function hideErrorBar(): void {
+  if (errorBar) errorBar.hidden = true;
 }
 
 // --- render paths ---------------------------------------------------------
 
 function applyTypstResult(result: TypstResult): void {
   if (result.errors.length > 0) {
-    showErrorBanner(result.errors[0]!);
+    showErrorBar(result.errors);
     return; // keep last-good pane contents
   }
-  hideErrorBanner();
+  hideErrorBar();
   pane().innerHTML = result.pages.map((svg) => `<div class="typst-page">${svg}</div>`).join("");
 }
 
@@ -147,7 +166,7 @@ async function renderTypstNow(text: string): Promise<void> {
 export function renderPreviewNow(text: string): void {
   if (!visible) return;
   if (previewKind === "csv") {
-    hideErrorBanner();
+    hideErrorBar();
     pane().innerHTML = renderCsvTable(text);
     return;
   }
@@ -155,8 +174,8 @@ export function renderPreviewNow(text: string): void {
     void renderTypstNow(text); // fire-and-forget; race-guarded internally
     return;
   }
-  // hide any typ banner from the previous tab — sync md render doesn't go through applyTypstResult
-  hideErrorBanner();
+  // hide any typ error bar from the previous tab — sync md render doesn't go through applyTypstResult
+  hideErrorBar();
   pane().innerHTML = renderMarkdown(text);
   resolveImages(pane(), previewBaseDir);
   void mountRichBlocks(pane()); // fire-and-forget; guards detached nodes itself

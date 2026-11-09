@@ -60,10 +60,10 @@ let workspaceRoot: string | null = null;
 function currentTypstProject(): TypstProject {
   const active = runtime.find((t) => t.id === coll.activeId);
   const path = active?.meta.path ?? null;
-  // ponytail: gate root on active path — preview.ts gates its error banner's
+  // ponytail: gate root on active path — preview.ts gates its error bar's
   // file prefix on lastCompileRoot, so workspace + untitled active must look
   // detached (Rust falls back anyway, but a non-null root would leak a
-  // misleading `main.typ:` prefix on the banner).
+  // misleading `main.typ:` prefix on the error bar).
   const root = path && workspaceRoot ? workspaceRoot : null;
   const entries: OverrideEntry[] = runtime.map((t) => ({
     path: t.meta.path,
