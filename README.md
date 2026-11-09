@@ -36,7 +36,8 @@ xdg-mime default klad.desktop text/markdown
 
 Opening a `.typ`/`.typst` file shows a live preview next to the editor: the
 embedded `typst` compiler runs as you type and renders one SVG per page.
-Compile errors appear in a banner while the last good preview stays visible.
+Compile errors appear on a slim bar atop the preview pane while the last good
+preview stays visible.
 
 ### Packages
 
@@ -66,7 +67,7 @@ Example: `~/.local/share/typst/packages/local/mylib/0.2.0/` is imported as
 `#import "@local/mylib:0.2.0": ...`.
 
 Offline, cached packages keep working; an uncached `@preview` import shows a
-clean error in the preview banner.
+clean error in the preview error bar.
 
 ### Limitations
 

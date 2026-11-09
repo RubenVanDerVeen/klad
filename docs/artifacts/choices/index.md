@@ -7,3 +7,4 @@
 | 2026-09-30 | Active tab is the Typst compile entry, no designated main file | active | [2026-09-30-typst-active-tab-entry-decision.md](2026-09-30-typst-active-tab-entry-decision.md) |
 | 2026-09-30 | Workspace tree: open-on-click, lazy re-list, no watcher/CRUD | active | [2026-09-30-workspace-tree-scope-decision.md](2026-09-30-workspace-tree-scope-decision.md) |
 | 2026-10-06 | Panel resize/collapse: pointer-event splitters + localStorage, no library | active | [2026-10-06-panel-resize-collapse-decision.md](2026-10-06-panel-resize-collapse-decision.md) |
+| 2026-11-09 | Typst error bar: in-pane sticky bar, no wrapper column, no overlay | active | [2026-11-09-typst-error-bar-decision.md](2026-11-09-typst-error-bar-decision.md) |
