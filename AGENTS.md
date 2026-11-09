@@ -29,7 +29,7 @@ Klad is a cross-platform Notepad replacement for Windows and Linux with live Mar
 - **Sync targets:** `package.json` -> `version`, `src-tauri/Cargo.toml` -> `[package].version`.
 - **Policy:** SemVer 2.0.0; release policy is defined by the project-standardization versioning reference.
 - **Trigger:** release cutting is deliberate and updates `[Unreleased]` in `CHANGELOG.md`.
-- **Last release:** `v0.8.0` - 2026-10-06.
+- **Last release:** `v0.9.0` - 2026-11-09.
 
 ## Components
 | Area | Location | Purpose |
