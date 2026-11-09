@@ -61,7 +61,7 @@ export function typstCompileArgs(
 }
 
 // ponytail: tracks the root passed to the most recent compile so the error
-// banner can hide Source::detached's "/main.typ" file prefix in single-file mode.
+// bar can hide Source::detached's "/main.typ" file prefix in single-file mode.
 let lastCompileRoot: string | null = null;
 
 // --- visibility -----------------------------------------------------------
@@ -75,7 +75,7 @@ export function isPreviewVisible(): boolean {
 export function setPreviewVisible(on: boolean): void {
   visible = on;
   pane().hidden = !on;
-  if (!on) hideErrorBanner();
+  if (!on) hideErrorBar();
 }
 
 // --- race guard (spec §4.2) ----------------------------------------------
@@ -89,12 +89,12 @@ let renderToken = 0;
 
 // --- error bar (built from TS; no index.html change) ----------------------
 
-let errorBanner: HTMLElement | null = null;
+let errorBar: HTMLElement | null = null;
 
-function errorBannerEl(): HTMLElement {
+function errorBarEl(): HTMLElement {
   // isConnected check: pane().innerHTML wipes the bar on a successful render;
   // recreate it lazily instead of returning an orphaned node.
-  if (errorBanner?.isConnected) return errorBanner;
+  if (errorBar?.isConnected) return errorBar;
   const el = document.createElement("div");
   el.id = "preview-error";
   el.hidden = true;
@@ -118,38 +118,39 @@ function errorBannerEl(): HTMLElement {
   el.appendChild(close);
 
   pane().prepend(el);
-  errorBanner = el;
+  errorBar = el;
   return el;
 }
 
-function showErrorBanner(errors: TypstError[]): void {
+function showErrorBar(errors: TypstError[]): void {
   // ponytail: Source::detached still interns FileId(Project, /main.typ), so
   // err.file is non-null without a workspace — gate the file prefix on root.
   const first = errors[0]!;
   const filePart = first.file != null && lastCompileRoot != null ? `${first.file}:` : "";
   const linePart = first.line != null ? `line ${first.line}: ` : "";
-  const el = errorBannerEl();
+  const el = errorBarEl();
   const text = `${filePart}${linePart}${first.message}`;
-  const more = errors.length > 1 ? ` (+${errors.length - 1} more)` : "";
+  const extra = errors.length - 1;
+  const more = extra > 0 ? ` (+${extra} more)` : "";
   el.querySelector<HTMLElement>(".preview-error-msg")!.textContent = text;
   el.title = `${text}${more}`;
   el.querySelector<HTMLElement>(".preview-error-count")!.textContent =
-    errors.length > 1 ? `+${errors.length - 1}` : "";
+    extra > 0 ? `+${extra}` : "";
   el.hidden = false;
 }
 
-function hideErrorBanner(): void {
-  if (errorBanner) errorBanner.hidden = true;
+function hideErrorBar(): void {
+  if (errorBar) errorBar.hidden = true;
 }
 
 // --- render paths ---------------------------------------------------------
 
 function applyTypstResult(result: TypstResult): void {
   if (result.errors.length > 0) {
-    showErrorBanner(result.errors);
+    showErrorBar(result.errors);
     return; // keep last-good pane contents
   }
-  hideErrorBanner();
+  hideErrorBar();
   pane().innerHTML = result.pages.map((svg) => `<div class="typst-page">${svg}</div>`).join("");
 }
 
@@ -165,7 +166,7 @@ async function renderTypstNow(text: string): Promise<void> {
 export function renderPreviewNow(text: string): void {
   if (!visible) return;
   if (previewKind === "csv") {
-    hideErrorBanner();
+    hideErrorBar();
     pane().innerHTML = renderCsvTable(text);
     return;
   }
@@ -173,8 +174,8 @@ export function renderPreviewNow(text: string): void {
     void renderTypstNow(text); // fire-and-forget; race-guarded internally
     return;
   }
-  // hide any typ banner from the previous tab — sync md render doesn't go through applyTypstResult
-  hideErrorBanner();
+  // hide any typ error bar from the previous tab — sync md render doesn't go through applyTypstResult
+  hideErrorBar();
   pane().innerHTML = renderMarkdown(text);
   resolveImages(pane(), previewBaseDir);
   void mountRichBlocks(pane()); // fire-and-forget; guards detached nodes itself

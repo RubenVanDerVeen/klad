@@ -246,6 +246,7 @@ dialog {
   cursor: pointer;
   color: inherit;
   padding: 0 4px;
+  font-family: inherit;
   font-size: 12px;
   line-height: 1;
   border-radius: 3px;
