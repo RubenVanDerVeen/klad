@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- Typst compile errors now shown on a slim bar atop the preview pane.
+
 ## [0.8.0] - 2026-10-06
 
 ### Added
